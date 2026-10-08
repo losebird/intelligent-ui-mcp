@@ -336,7 +336,7 @@
     "mode": {
       "enum": ["tree", "ops", "streaming_chunks"],
       "default": "tree",
-      "description": "tree=整树 replace；ops=直接 ops；streaming_chunks=③"
+      "description": "tree=整树 replace；ops=直接 ops；streaming_chunks=③ JSONL ops 每行即 apply；遗留整段 JSON 仍等 chunkDone"
     },
     "tree": {
       "type": "object",

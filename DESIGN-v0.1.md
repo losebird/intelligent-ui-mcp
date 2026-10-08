@@ -78,7 +78,7 @@ Harness → MCP（Catalog / Schema / Compile / Session / Action / Policy）→ H
 |----|------|----------|------------|----------|
 | G1 | **设计判断**弱（无训练权重，仅靠 prompt） | 否则满屏卡片或该交互不出 | ⑤ | 固定题集上「该纯文字 / 该 UI」准确率可测 |
 | G2 | **Host 嵌入**：多数 harness 只显示 tool 文本 | 用户看不见内嵌 UI = 未对齐 ChatGPT | ② | Cursor/本地参考窗能画 `ui.delta` |
-| G3 | **流式编译 + 会话**：增量、骨架、中断、多轮 patch、可选 refresh | 对齐「边生成边出」与 widget 续刷 | ③ | 冒烟：分片 propose → 首控件时间；action 后局部更新 |
+| G3 | **流式编译 + 会话**：增量、骨架、中断、多轮 patch、可选 refresh | 对齐「边生成边出」与 widget 续刷 | ③ | 冒烟：分片 propose → 首控件时间；action 后局部更新；体感缺口见 [`docs/STREAMING-UX-GAP.md`](./docs/STREAMING-UX-GAP.md) |
 | G4 | **注册即渲染的信任模型** | 本地加载 = 代码执行风险 | ④ | 仅信任目录；失败降级占位；无远程码 |
 | G5 | **七包真映射成本** | 七套同时真渲染拖死主路径 | ① 真渲染 base+shadcn；⑥ 其余 | ① 两包可点；⑥ 前其余可 schema-only |
 | G6 | **状态化小工具**（bind / reduce / 沙箱计算） | 否则只有静态表单，没有计算器级体验 | ③ 起骨架，可延至 ⑤ | 小费滑条改值 → 汇总更新 |

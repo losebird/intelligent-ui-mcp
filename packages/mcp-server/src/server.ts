@@ -14,6 +14,12 @@ import type { UiNode } from "./protocol.js";
 import type { UiOp } from "./session/ops.js";
 import { policyCheck, isPolicyEnabled } from "./policy/referee.js";
 import { evaluateExpr } from "./policy/expr.js";
+import {
+  resolveHostBaseUrl,
+  buildEmbedUrl,
+  buildHostHint,
+  probeHostReady,
+} from "./hostUrls.js";
 
 export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
   const catalog = new CatalogRegistry();
@@ -131,7 +137,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "ui_open",
-    "Open a UI session; writes ui.open to the events NDJSON bypass",
+    "Open a UI session; writes ui.open to NDJSON bypass. Returns hostUrl, embedUrl (?embed=1), hostReady, hostHint for co-located Host beside chat.",
     {
       sessionId: z.string().optional(),
       title: z.string().optional(),
@@ -147,6 +153,10 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
       if (!result.ok) {
         return textContent(errResult(result.code, result.message));
       }
+      const hostUrl = resolveHostBaseUrl();
+      const embedUrl = buildEmbedUrl(hostUrl, result.session.sessionId);
+      const hostReady = await probeHostReady(hostUrl);
+      const sessionDir = sessions.events.dir;
       return textContent(
         okResult({
           sessionId: result.session.sessionId,
@@ -155,7 +165,11 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
           eventsPath: result.eventsPath,
           actionsPath: sessions.events.actionsPath(result.session.sessionId),
           snapshotPath: sessions.events.snapshotPath(result.session.sessionId),
-          sessionDir: sessions.events.dir,
+          sessionDir,
+          hostUrl,
+          embedUrl,
+          hostReady,
+          hostHint: buildHostHint({ hostUrl, embedUrl, hostReady, sessionDir }),
         }),
       );
     },
@@ -163,7 +177,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "ui_propose",
-    "Propose UI: mode=tree (replace), mode=ops (delta), mode=streaming_chunks (buffer→parse on chunkDone). Optional query/forceUi for policy gate.",
+    "Propose UI: mode=tree (replace), mode=ops (delta + partial paint), mode=streaming_chunks (JSONL ops apply per line; leftover tree parsed on chunkDone). Optional query/forceUi for policy gate.",
     {
       sessionId: z.string(),
       mode: z.enum(["tree", "ops", "streaming_chunks"]).optional().default("tree"),
@@ -275,6 +289,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
               sessionId: result.session.sessionId,
               revision: result.session.revision,
               status: result.session.status,
+              partial: result.session.partial,
               warnings: result.warnings,
               lint: result.lint,
               decision: result.decision,
@@ -311,6 +326,8 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
               lint: result.lint,
               decision: result.decision,
               bufferedChars: "bufferedChars" in result ? result.bufferedChars : 0,
+              appliedOps: "appliedOps" in result ? result.appliedOps : 0,
+              partial: result.session.partial,
               eventsPath: sessions.events.sessionPath(result.session.sessionId),
               snapshotPath: sessions.events.snapshotPath(result.session.sessionId),
             }),

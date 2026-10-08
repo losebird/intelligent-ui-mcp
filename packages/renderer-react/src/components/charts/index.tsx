@@ -12,8 +12,7 @@ function pickXY(
   xKey: string,
   yKey: string,
 ): { label: string; value: number } {
-  const label =
-    row[xKey] ?? row.label ?? row.x ?? row.name ?? "";
+  const label = row[xKey] ?? row.label ?? row.x ?? row.name ?? "";
   const value = num(row[yKey] ?? row.value ?? row.y, 0);
   return { label: String(label), value };
 }
@@ -43,14 +42,13 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
     const xKey = String(node.props?.xKey ?? "label");
     const yKey = String(node.props?.yKey ?? "value");
     const series = normalizeSeries(node.props?.data, xKey, yKey);
-    const height = num(node.props?.height, 180);
+    const height = num(node.props?.height, 200);
     const color = String(node.props?.color ?? "#2563eb");
     const showDots = node.props?.showDots !== false;
     const title = node.props?.title ? String(node.props.title) : undefined;
-    const aria =
-      String(node.props?.ariaLabel ?? title ?? "Line chart");
-    const pad = 28;
-    const width = 360;
+    const aria = String(node.props?.ariaLabel ?? title ?? "Line chart");
+    const pad = 32;
+    const width = 420;
     const values = series.map((s) => s.value);
     const minV = values.length ? Math.min(0, ...values) : 0;
     const maxV = values.length ? Math.max(...values, 1) : 1;
@@ -67,6 +65,13 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
     const d = coords
       .map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)},${c.y.toFixed(1)}`)
       .join(" ");
+    const baseline = height - pad;
+    const areaD =
+      coords.length > 0
+        ? `${d} L${coords[coords.length - 1]!.x.toFixed(1)},${baseline} L${coords[0]!.x.toFixed(1)},${baseline} Z`
+        : "";
+    const gradId = `iui-line-grad-${String(node.id).replace(/[^a-zA-Z0-9_-]/g, "")}`;
+    const gridYs = [0.25, 0.5, 0.75].map((t) => pad + t * (height - pad * 2));
     return (
       <figure className="iui-chart" data-iui-id={node.id}>
         {title ? <figcaption className="iui-chart-title">{title}</figcaption> : null}
@@ -77,6 +82,22 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
           role="img"
           aria-label={aria}
         >
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          {gridYs.map((y, i) => (
+            <line
+              key={i}
+              x1={pad}
+              y1={y}
+              x2={width - pad}
+              y2={y}
+              className="iui-chart-grid"
+            />
+          ))}
           <line
             x1={pad}
             y1={height - pad}
@@ -91,20 +112,38 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
             y2={height - pad}
             className="iui-chart-axis"
           />
-          {d ? (
-            <path d={d} fill="none" stroke={color} strokeWidth={2} />
+          {areaD ? (
+            <path d={areaD} fill={`url(#${gradId})`} className="iui-chart-area" />
           ) : null}
+          {d ? <path d={d} stroke={color} className="iui-chart-line" /> : null}
           {showDots
             ? coords.map((c, i) => (
-                <circle key={i} cx={c.x} cy={c.y} r={3.5} fill={color}>
-                  <title>{`${c.label}: ${c.value}`}</title>
-                </circle>
+                <g key={i}>
+                  <circle
+                    cx={c.x}
+                    cy={c.y}
+                    r={4}
+                    fill={color}
+                    className="iui-chart-dot"
+                  >
+                    <title>{`${c.label}: ${c.value}`}</title>
+                  </circle>
+                  <text
+                    x={c.x}
+                    y={height - pad + 16}
+                    textAnchor="middle"
+                    className="iui-chart-tick"
+                  >
+                    {c.label}
+                  </text>
+                </g>
               ))
             : null}
         </svg>
         <div className="iui-chart-legend">
           {series.map((s, i) => (
             <span key={i}>
+              <span className="iui-chart-swatch" style={{ background: color }} />
               {s.label}: {s.value}
             </span>
           ))}
@@ -117,17 +156,20 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
     const xKey = String(node.props?.xKey ?? "label");
     const yKey = String(node.props?.yKey ?? "value");
     const series = normalizeSeries(node.props?.data, xKey, yKey);
-    const height = num(node.props?.height, 180);
+    const height = num(node.props?.height, 200);
     const color = String(node.props?.color ?? "#0f766e");
     const title = node.props?.title ? String(node.props.title) : undefined;
     const aria = String(node.props?.ariaLabel ?? title ?? "Bar chart");
-    const pad = 28;
-    const width = 360;
+    const pad = 32;
+    const width = 420;
     const maxV = Math.max(...series.map((s) => s.value), 1);
-    const gap = 8;
+    const gap = 10;
     const inner = width - pad * 2;
     const barW =
-      series.length > 0 ? Math.max(8, (inner - gap * (series.length - 1)) / series.length) : 0;
+      series.length > 0
+        ? Math.max(10, (inner - gap * (series.length - 1)) / series.length)
+        : 0;
+    const gridYs = [0.25, 0.5, 0.75].map((t) => pad + t * (height - pad * 2));
     return (
       <figure className="iui-chart" data-iui-id={node.id}>
         {title ? <figcaption className="iui-chart-title">{title}</figcaption> : null}
@@ -138,6 +180,16 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
           role="img"
           aria-label={aria}
         >
+          {gridYs.map((y, i) => (
+            <line
+              key={i}
+              x1={pad}
+              y1={y}
+              x2={width - pad}
+              y2={y}
+              className="iui-chart-grid"
+            />
+          ))}
           <line
             x1={pad}
             y1={height - pad}
@@ -146,17 +198,17 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
             className="iui-chart-axis"
           />
           {series.map((s, i) => {
-            const h = ((s.value / maxV) * (height - pad * 2)) || 0;
+            const h = (s.value / maxV) * (height - pad * 2) || 0;
             const x = pad + i * (barW + gap);
             const y = height - pad - h;
             return (
               <g key={i}>
-                <rect x={x} y={y} width={barW} height={h} fill={color} rx={3}>
+                <rect x={x} y={y} width={barW} height={h} fill={color} rx={5}>
                   <title>{`${s.label}: ${s.value}`}</title>
                 </rect>
                 <text
                   x={x + barW / 2}
-                  y={height - pad + 14}
+                  y={height - pad + 16}
                   textAnchor="middle"
                   className="iui-chart-tick"
                 >
@@ -176,7 +228,7 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
       label: String(row.label ?? ""),
       value: Math.max(0, num(row.value, 0)),
     }));
-    const size = num(node.props?.size, 160);
+    const size = num(node.props?.size, 168);
     const donut = Boolean(node.props?.donut);
     const title = node.props?.title ? String(node.props.title) : undefined;
     const aria = String(node.props?.ariaLabel ?? title ?? "Pie chart");
@@ -230,7 +282,7 @@ export const chartsRenderers: Record<string, ComponentRenderer> = {
           aria-label={aria}
         >
           {slices.map((s, i) => (
-            <path key={i} d={s.d} fill={s.color}>
+            <path key={i} d={s.d} fill={s.color} stroke="#fff" strokeWidth={1.5}>
               <title>{`${s.label}: ${s.value}`}</title>
             </path>
           ))}

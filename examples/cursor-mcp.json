@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "intelligent-ui": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/intelligent-ui-mcp/packages/mcp-server/dist/index.js"],
+      "env": {
+        "IUI_SESSION_DIR": "/ABSOLUTE/PATH/TO/.intelligent-ui-mcp/sessions"
+      }
+    }
+  }
+}

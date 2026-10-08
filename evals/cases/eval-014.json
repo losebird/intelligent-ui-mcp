@@ -1,0 +1,19 @@
+{
+  "id": "eval-014",
+  "locale": "zh-CN",
+  "prompt": "给我一个登录页 UI 原型",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Card",
+      "catalog.shadcn/Form",
+      "catalog.shadcn/Input",
+      "catalog.shadcn/Button"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

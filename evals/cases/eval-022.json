@@ -1,0 +1,16 @@
+{
+  "id": "eval-022",
+  "locale": "zh-CN",
+  "prompt": "生成一个错误码对照表：E001…E005",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/DataTable"
+    ],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

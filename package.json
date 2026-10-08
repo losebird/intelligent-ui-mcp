@@ -1,0 +1,32 @@
+{
+  "name": "intelligent-ui-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Intelligent UI MCP — OpenAI Intelligent UI–aligned generative UI over stdio MCP",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @intelligent-ui/catalog-base && npm run build -w @intelligent-ui/catalog-shadcn && npm run build -w @intelligent-ui/catalog-charts && npm run build -w @intelligent-ui/catalog-radix && npm run build -w @intelligent-ui/catalog-mui && npm run build -w @intelligent-ui/catalog-antd && npm run build -w @intelligent-ui/catalog-chakra && npm run build -w @intelligent-ui/renderer-react && npm run build -w @intelligent-ui/mcp-server && npm run build -w @intelligent-ui/host-window",
+    "start": "node packages/mcp-server/dist/index.js",
+    "host": "npm run dev -w @intelligent-ui/host-window",
+    "smoke": "node scripts/smoke.mjs",
+    "host-smoke": "node scripts/host-smoke.mjs",
+    "typecheck": "npm run build",
+    "stream-smoke": "node scripts/stream-action-smoke.mjs",
+    "custom-smoke": "node scripts/custom-package-smoke.mjs",
+    "policy-smoke": "node scripts/policy-smoke.mjs",
+    "catalog-smoke": "node scripts/catalog-smoke.mjs",
+    "eval": "node scripts/eval-runner.mjs",
+    "eval:validate": "node scripts/eval-runner.mjs --validate-only",
+    "live-demo": "node scripts/live-demo.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

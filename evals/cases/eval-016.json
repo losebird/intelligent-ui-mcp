@@ -1,0 +1,17 @@
+{
+  "id": "eval-016",
+  "locale": "zh-CN",
+  "prompt": "警告我：删除仓库不可恢复",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.base/Callout",
+      "catalog.shadcn/AlertDialog"
+    ],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

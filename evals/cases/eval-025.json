@@ -1,0 +1,16 @@
+{
+  "id": "eval-025",
+  "locale": "zh-CN",
+  "prompt": "",
+  "expect": {
+    "format": "plain_text",
+    "tags": [],
+    "anyOfTypes": [],
+    "forbidTypes": [],
+    "needsAction": false,
+    "notes": "空会话 Host 空状态；无 UI 树"
+  },
+  "meta": {
+    "hostEmpty": true
+  }
+}

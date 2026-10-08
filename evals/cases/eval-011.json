@@ -1,0 +1,17 @@
+{
+  "id": "eval-011",
+  "locale": "zh-CN",
+  "prompt": "给我一个是否加班的二选一",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/ButtonGroup",
+      "catalog.shadcn/Button"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

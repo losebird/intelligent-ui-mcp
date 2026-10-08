@@ -1,0 +1,14 @@
+{
+  "id": "eval-003",
+  "locale": "zh-CN",
+  "prompt": "2+2 等于几？",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

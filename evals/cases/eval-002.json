@@ -1,0 +1,14 @@
+{
+  "id": "eval-002",
+  "locale": "zh-CN",
+  "prompt": "用一句话解释什么是 TCP",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "eval-019",
+  "locale": "zh-CN",
+  "prompt": "下拉选一个时区：UTC / CST / EST",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Select"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

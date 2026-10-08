@@ -1,0 +1,17 @@
+{
+  "id": "eval-020",
+  "locale": "zh-CN",
+  "prompt": "用标签页分别展示『概述｜参数｜风险』三段虚构内容",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Tabs",
+      "catalog.base/Markdown"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

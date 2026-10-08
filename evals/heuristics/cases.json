@@ -1,0 +1,62 @@
+{
+  "version": "0.1",
+  "note": "⑤ heuristic format cases; full eval harness in ⑥",
+  "cases": [
+    {
+      "id": "eval-001",
+      "prompt": "巴黎是哪个国家的首都？",
+      "expect": {
+        "format": "plain_text"
+      }
+    },
+    {
+      "id": "eval-002",
+      "prompt": "用一句话解释什么是 TCP",
+      "expect": {
+        "format": "plain_text"
+      }
+    },
+    {
+      "id": "eval-003",
+      "prompt": "2+2 等于几？",
+      "expect": {
+        "format": "plain_text"
+      }
+    },
+    {
+      "id": "eval-021",
+      "prompt": "只回答 yes 或 no：地球绕着太阳转吗？",
+      "expect": {
+        "format": "plain_text"
+      }
+    },
+    {
+      "id": "eval-006",
+      "prompt": "对比 iPhone 16 / Pixel 9 / Galaxy S25 的续航与售价",
+      "expect": {
+        "format": "ui"
+      }
+    },
+    {
+      "id": "eval-008",
+      "prompt": "帮我做一个小费计算器：账单金额、小费比例、人数",
+      "expect": {
+        "format": "ui"
+      }
+    },
+    {
+      "id": "eval-011",
+      "prompt": "给我一个是否加班的二选一",
+      "expect": {
+        "format": "ui"
+      }
+    },
+    {
+      "id": "eval-010",
+      "prompt": "用可点步骤说明怎么更换自行车内胎",
+      "expect": {
+        "format": "ui"
+      }
+    }
+  ]
+}

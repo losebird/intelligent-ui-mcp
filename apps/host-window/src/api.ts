@@ -42,18 +42,41 @@ function isRetryableFetchError(err: unknown): boolean {
   // Vite HMR / brief restart, agent proxy blip, connection reset
   return (
     err.name === "TypeError" ||
-    /Failed to fetch|NetworkError|fetch failed|ECONNREFUSED|ECONNRESET|network/i.test(
+    /Failed to fetch|NetworkError|fetch failed|ECONNREFUSED|ECONNRESET|network|→ 5\d\d/i.test(
       msg,
     )
   );
 }
 
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(apiUrl(url), { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`${url} → ${res.status}`);
+/**
+ * GET JSON with short retries — Vite HMR / brief proxy blips often surface as
+ * TypeError: Failed to fetch even though /api/* is fine a moment later.
+ */
+async function getJson<T>(url: string, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(apiUrl(url), { cache: "no-store" });
+      if (!res.ok) {
+        const err = new Error(`${url} → ${res.status}`);
+        if (res.status >= 500 && i < attempts - 1) {
+          lastErr = err;
+          await sleep(80 * (i + 1));
+          continue;
+        }
+        throw err;
+      }
+      return (await res.json()) as T;
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1 && isRetryableFetchError(err)) {
+        await sleep(80 * (i + 1));
+        continue;
+      }
+      throw err;
+    }
   }
-  return res.json() as Promise<T>;
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 export async function fetchConfig() {

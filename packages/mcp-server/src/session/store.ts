@@ -32,6 +32,8 @@ export type PendingAction = {
 type SessionRuntime = {
   mutex: Promise<unknown>;
   streamBuffer: string;
+  /** Non-op JSONL lines / incomplete blob held for chunkDone full-parse fallback. */
+  fallbackBuffer: string;
   pendingActions: PendingAction[];
   seenActionIds: Set<string>;
   actionPendingAt: number | null;
@@ -85,6 +87,7 @@ export class SessionStore {
       rt = {
         mutex: Promise.resolve(),
         streamBuffer: "",
+        fallbackBuffer: "",
         pendingActions: [],
         seenActionIds: new Set(),
         actionPendingAt: null,
@@ -488,8 +491,11 @@ export class SessionStore {
   }
 
   /**
-   * streaming_chunks: buffer text; on chunkDone parse as JSON tree or {ops:[...]}.
-   * Simplified: only parse full JSON when chunkDone=true (no partial JSON streaming).
+   * streaming_chunks:
+   * - Prefer JSONL ops: each complete newline-delimited JSON line that is an op /
+   *   ops array / {ops:[]} is applied immediately via proposeOps (ui.delta + snapshot).
+   * - Non-op lines accumulate in fallbackBuffer; on chunkDone, parse leftover as
+   *   full JSON tree | {tree} | {ops} (legacy one-shot behavior).
    */
   proposeChunks(input: {
     sessionId: string;
@@ -505,6 +511,7 @@ export class SessionStore {
         decision: "ui";
         warnings: string[];
         bufferedChars: number;
+        appliedOps?: number;
       }
     | { ok: false; code: string; message: string; lint?: LintResult } {
     const gate = this.requireWritable(input.sessionId);
@@ -521,35 +528,113 @@ export class SessionStore {
     session.partial = true;
     session.updatedAt = nowIso();
 
+    const warnings: string[] = [];
+    let appliedOps = 0;
+    let lastLint: LintResult = { passed: true, issues: [] };
+
+    const coerceOps = (parsed: unknown): UiOp[] | null => {
+      if (Array.isArray(parsed)) {
+        if (
+          parsed.length > 0 &&
+          parsed.every(
+            (x) => x && typeof x === "object" && typeof (x as UiOp).op === "string",
+          )
+        ) {
+          return parsed as UiOp[];
+        }
+        return null;
+      }
+      if (parsed && typeof parsed === "object") {
+        const o = parsed as { op?: unknown; ops?: unknown };
+        if (typeof o.op === "string") return [parsed as UiOp];
+        if (Array.isArray(o.ops)) return o.ops as UiOp[];
+      }
+      return null;
+    };
+
+    // Drain complete JSONL lines and apply ops immediately
+    while (true) {
+      const nl = rt.streamBuffer.indexOf("\n");
+      if (nl < 0) break;
+      const line = rt.streamBuffer.slice(0, nl).trim();
+      rt.streamBuffer = rt.streamBuffer.slice(nl + 1);
+      if (!line) continue;
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(line);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        rt.fallbackBuffer += line + "\n";
+        warnings.push(`streaming_chunks: non-JSON line deferred (${msg})`);
+        continue;
+      }
+
+      const ops = coerceOps(parsed);
+      if (ops && ops.length > 0) {
+        const opsResult = this.proposeOps({
+          sessionId: session.sessionId,
+          ops,
+          chunkDone: false,
+          runLint: input.runLint,
+        });
+        if (!opsResult.ok) return opsResult;
+        appliedOps += ops.length;
+        lastLint = opsResult.lint;
+        for (const w of opsResult.warnings) warnings.push(w);
+      } else {
+        // Tree-shaped or other JSON — keep for chunkDone full parse
+        rt.fallbackBuffer += line + "\n";
+      }
+    }
+
     if (!input.chunkDone) {
+      // Snapshot already written by proposeOps when ops applied; refresh pointer if only buffered
+      if (appliedOps === 0) this.persistSnapshot(session);
+      return {
+        ok: true,
+        session,
+        lint: lastLint,
+        decision: "ui",
+        warnings: [
+          ...warnings,
+          appliedOps > 0
+            ? `streaming_chunks: applied ${appliedOps} op(s) from JSONL (partial paint)`
+            : "streaming_chunks: buffered; waiting for JSONL newline or chunkDone",
+        ],
+        bufferedChars: rt.streamBuffer.length + rt.fallbackBuffer.length,
+        appliedOps,
+      };
+    }
+
+    // chunkDone: flush leftover buffer as legacy full JSON (tree | {tree} | {ops})
+    const leftover = (rt.fallbackBuffer + rt.streamBuffer).trim();
+    rt.streamBuffer = "";
+    rt.fallbackBuffer = "";
+
+    if (!leftover) {
+      this.emitDone(session, "completed");
+      session.status = "idle";
+      session.partial = false;
+      session.updatedAt = nowIso();
       this.persistSnapshot(session);
       return {
         ok: true,
         session,
-        lint: { passed: true, issues: [] },
+        lint: lastLint,
         decision: "ui",
-        warnings: ["streaming_chunks: buffered; will parse on chunkDone"],
-        bufferedChars: rt.streamBuffer.length,
-      };
-    }
-
-    const raw = rt.streamBuffer.trim();
-    rt.streamBuffer = "";
-
-    if (!raw) {
-      this.emitError(session, "PARSE_FAILED", "Empty stream buffer on chunkDone", true);
-      session.partial = true;
-      this.persistSnapshot(session);
-      return {
-        ok: false,
-        code: "PARSE_FAILED",
-        message: "Empty stream buffer on chunkDone",
+        warnings:
+          appliedOps > 0
+            ? [...warnings, `streaming_chunks: finalized after ${appliedOps} JSONL op(s)`]
+            : [...warnings, "streaming_chunks: chunkDone with empty buffer (no-op finalize)"],
+        bufferedChars: 0,
+        appliedOps,
       };
     }
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(leftover);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this.emitError(
@@ -558,7 +643,6 @@ export class SessionStore {
         `JSON parse failed: ${msg}`,
         true,
       );
-      // keep partial tree
       session.partial = true;
       this.persistSnapshot(session);
       return {
@@ -568,15 +652,11 @@ export class SessionStore {
       };
     }
 
-    // Accept: UiNode tree, or { tree }, or { ops: [] }
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      Array.isArray((parsed as { ops?: unknown }).ops)
-    ) {
+    const leftoverOps = coerceOps(parsed);
+    if (leftoverOps && leftoverOps.length > 0) {
       const opsResult = this.proposeOps({
         sessionId: session.sessionId,
-        ops: (parsed as { ops: UiOp[] }).ops,
+        ops: leftoverOps,
         chunkDone: true,
         runLint: input.runLint,
       });
@@ -586,8 +666,9 @@ export class SessionStore {
         session: opsResult.session,
         lint: opsResult.lint,
         decision: "ui" as const,
-        warnings: opsResult.warnings,
+        warnings: [...warnings, ...opsResult.warnings],
         bufferedChars: 0,
+        appliedOps: appliedOps + leftoverOps.length,
       };
     }
 
@@ -633,8 +714,9 @@ export class SessionStore {
       session: result.session,
       lint: result.lint,
       decision: "ui",
-      warnings: result.warnings,
+      warnings: [...warnings, ...result.warnings],
       bufferedChars: 0,
+      appliedOps,
     };
   }
 
@@ -1019,7 +1101,10 @@ export class SessionStore {
     this.clearActionTimer(sessionId);
     this.stopWatcher(sessionId);
     const rt = this.runtime.get(sessionId);
-    if (rt) rt.streamBuffer = "";
+    if (rt) {
+      rt.streamBuffer = "";
+      rt.fallbackBuffer = "";
+    }
     session.status = "closing";
     session.updatedAt = nowIso();
     this.emitDone(session, reason);

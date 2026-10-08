@@ -89,8 +89,9 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 
 | 项 | 路径 |
 |----|------|
-| Host 窗 | `apps/host-window`（Vite + React） |
+| Host 窗 | `apps/host-window`（Vite + React；**M1 经 `@intelligent-ui/host-adapter`**） |
 | Session API | `apps/host-window/server/sessionApi.mjs`（`/api/current` `/api/snapshot/:id` `/api/events/:id` `POST /api/action`） |
+| 客户端泵 | `createHttpEventPump` + `HostSurfaceView`（见 `packages/host-adapter`） |
 | Action 旁路 | `{IUI_SESSION_DIR}/{sessionId}.actions.ndjson`（方案 C，actionId 幂等） |
 | 启动 | `IUI_SESSION_DIR=... npm run host` |
 | 验收 | `npm run host-smoke` → `HOST_SMOKE_OK` |
@@ -100,6 +101,27 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 - 轮询 `GET /api/packages`（读 `IUI_SESSION_DIR/registry.json`）。
 - 对每个包 `entryAbsPath`：Vite `/@fs` 动态 `import()`，按 `exports` 注入 `UiRenderer.extraRenderers`。
 - import 失败 / 缺 export → 黄条 + 该 type `catalog.base/Unknown`；MCP 侧已拒的路径 Host 不会看到。
+
+## 客户端事件路径（M1：host-adapter）
+
+参考 Host **不再**在 `App.tsx` 自写 `/api/current|snapshot|events` 轮询。M1 起：
+
+| 层 | 路径 | 职责 |
+|----|------|------|
+| Surface | `@intelligent-ui/host-adapter` `createIntelligentUiHostSurface` | 本地镜像 + `applyEvent` / `setSnapshot` |
+| 泵 | `createHttpEventPump` | 轮询 Host HTTP；`onCurrent` / `onEvent` / sticky `onPollError` |
+| 画布 | `HostSurfaceView` | 包 `UiRenderer`；点击 → `surface.onAction` → `POST /api/action`（`api.ts`） |
+| API 服务 | `server/sessionApi.mjs` | **未改**；仍为 NDJSON / snapshot / actions 旁路 |
+
+契约见 [`HOST-RENDERER-ADAPTER.md`](./HOST-RENDERER-ADAPTER.md)；验收勾选 [`HOST-ADAPTER-M0-CHECKLIST.md`](./HOST-ADAPTER-M0-CHECKLIST.md) §M1-host-wire。
+
+## 轮询韧性（Host client）
+
+`/api/current` 等 GET 在 Vite HMR / 短暂断连时偶发 `TypeError: Failed to fetch`（数据文件往往仍正常）。
+
+- `api.ts`：GET/POST（config / packages / action）对可重试网络错误短重试（同 Origin、`cache: no-store`）。
+- `createHttpEventPump`：GET 短重试；连续失败才 sticky 红条（默认 3 次）；指数退避；snapshot/events 软失败不盖掉 status。
+- `vite.config.ts`：session API 中间件置顶；`watch.ignored` 排除 `IUI_SESSION_DIR` / `~/.intelligent-ui-mcp`，避免写 NDJSON 重启 Vite。
 
 ## 明确不做
 

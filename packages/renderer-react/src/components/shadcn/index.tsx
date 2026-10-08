@@ -72,7 +72,7 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
       {node.props?.description ? (
         <div className="iui-card-desc">{String(node.props.description)}</div>
       ) : null}
-      {renderChildren(node.children)}
+      <div className="iui-card-body">{renderChildren(node.children)}</div>
     </div>
   ),
 
@@ -129,15 +129,13 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
     const max = Number(node.props?.max ?? 100);
     const step = Number(node.props?.step ?? 1);
     const [value, setValue] = useState(Number(node.props?.value ?? min));
+    const pct = max === min ? 0 : ((value - min) / (max - min)) * 100;
     return (
       <div className="iui-field" data-iui-id={node.id}>
-        {node.props?.label ? (
-          <label>
-            {String(node.props.label)}: {value}
-          </label>
-        ) : (
-          <label>{value}</label>
-        )}
+        <label>
+          <span>{String(node.props?.label ?? "Value")}</span>
+          <span className="iui-field-value">{value}</span>
+        </label>
         <input
           className="iui-slider"
           type="range"
@@ -145,6 +143,7 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
           max={max}
           step={step}
           value={value}
+          style={{ ["--iui-slider-pct" as string]: `${pct}%` }}
           onChange={(e) => {
             const v = Number(e.target.value);
             setValue(v);
@@ -262,12 +261,20 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
   },
 
   "catalog.shadcn/DataTable": ({ node }) => {
-    const columns =
+    const rawColumns =
       (node.props?.columns as Array<{
-        id: string;
-        header: string;
+        id?: string;
+        key?: string;
+        header?: string;
+        label?: string;
         align?: string;
       }>) ?? [];
+    // Accept both schema shape {id,header} and common alias {key,label}.
+    const columns = rawColumns.map((c) => {
+      const id = String(c.id ?? c.key ?? "");
+      const header = String(c.header ?? c.label ?? id);
+      return { id, header, align: c.align };
+    });
     const rows =
       (node.props?.rows as Array<Record<string, string | number | boolean | null>>) ??
       [];

@@ -2,13 +2,13 @@
   "name": "intelligent-ui-mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "Intelligent UI MCP — OpenAI Intelligent UI–aligned generative UI over stdio MCP",
+  "description": "Intelligent UI MCP \u2014 OpenAI Intelligent UI\u2013aligned generative UI over stdio MCP",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w @intelligent-ui/catalog-base && npm run build -w @intelligent-ui/catalog-shadcn && npm run build -w @intelligent-ui/catalog-charts && npm run build -w @intelligent-ui/catalog-radix && npm run build -w @intelligent-ui/catalog-mui && npm run build -w @intelligent-ui/catalog-antd && npm run build -w @intelligent-ui/catalog-chakra && npm run build -w @intelligent-ui/renderer-react && npm run build -w @intelligent-ui/mcp-server && npm run build -w @intelligent-ui/host-window",
+    "build": "npm run build -w @intelligent-ui/catalog-base && npm run build -w @intelligent-ui/catalog-shadcn && npm run build -w @intelligent-ui/catalog-charts && npm run build -w @intelligent-ui/catalog-radix && npm run build -w @intelligent-ui/catalog-mui && npm run build -w @intelligent-ui/catalog-antd && npm run build -w @intelligent-ui/catalog-chakra && npm run build -w @intelligent-ui/renderer-react && npm run build -w @intelligent-ui/host-adapter && npm run build -w @intelligent-ui/mcp-server && npm run build -w @intelligent-ui/host-window",
     "start": "node packages/mcp-server/dist/index.js",
     "host": "npm run dev -w @intelligent-ui/host-window",
     "smoke": "node scripts/smoke.mjs",
@@ -20,7 +20,8 @@
     "catalog-smoke": "node scripts/catalog-smoke.mjs",
     "eval": "node scripts/eval-runner.mjs",
     "eval:validate": "node scripts/eval-runner.mjs --validate-only",
-    "live-demo": "node scripts/live-demo.mjs"
+    "live-demo": "node scripts/live-demo.mjs",
+    "stream-phone-compare": "node scripts/stream-phone-compare.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"

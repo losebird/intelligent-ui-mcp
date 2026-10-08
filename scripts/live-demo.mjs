@@ -90,58 +90,74 @@ async function main() {
   const tree = {
     id: "root",
     type: "catalog.base/Stack",
-    props: { direction: "vertical", gap: 16 },
+    props: { direction: "vertical", gap: 18 },
     children: [
       {
         id: "title",
         type: "catalog.base/Markdown",
         props: {
-          text: "## Intelligent UI **真 MCP** 联调\n本树由 stdio `ui_propose` 写出，不是手写 snapshot。",
+          text: "## Intelligent UI 演示\n真 MCP stdio `ui_propose` 写出 · 小费计算器 + 折线图",
         },
       },
       {
         id: "card",
         type: "catalog.shadcn/Card",
-        props: { title: "小费计算器" },
+        props: {
+          title: "小费计算器",
+          description: "调整账单、小费比例与人数，预览人均分摊。",
+        },
         children: [
           {
             id: "bill",
             type: "catalog.shadcn/Input",
-            props: { label: "账单金额", value: "120", inputType: "number" },
+            props: { label: "账单金额（¥）", value: "120", inputType: "number" },
             bind: "bill",
           },
           {
             id: "tip",
             type: "catalog.shadcn/Slider",
-            props: { label: "小费 %", min: 0, max: 30, step: 1, value: 15 },
+            props: { label: "小费比例 %", min: 0, max: 30, step: 1, value: 15 },
             bind: "tipPercent",
           },
           {
             id: "people",
             type: "catalog.shadcn/Input",
-            props: { label: "人数", value: "3", inputType: "number" },
+            props: { label: "用餐人数", value: "3", inputType: "number" },
             bind: "people",
           },
           {
             id: "total",
             type: "catalog.shadcn/Badge",
-            props: { text: "人均约 ¥46.00（含小费）" },
+            props: { text: "人均约 ¥46.00（含小费）", variant: "default" },
           },
           {
-            id: "yes",
-            type: "catalog.shadcn/Button",
-            props: { label: "满意", variant: "default" },
-            actions: {
-              onClick: { actionType: "submit", payload: { intent: "satisfied" } },
-            },
-          },
-          {
-            id: "go",
-            type: "catalog.shadcn/Button",
-            props: { label: "重新计算", variant: "outline" },
-            actions: {
-              onClick: { actionType: "click", payload: { intent: "recalc" } },
-            },
+            id: "actions",
+            type: "catalog.base/Stack",
+            props: { direction: "horizontal", gap: 10 },
+            children: [
+              {
+                id: "yes",
+                type: "catalog.shadcn/Button",
+                props: { label: "满意", variant: "default" },
+                actions: {
+                  onClick: {
+                    actionType: "submit",
+                    payload: { intent: "satisfied" },
+                  },
+                },
+              },
+              {
+                id: "go",
+                type: "catalog.shadcn/Button",
+                props: { label: "重新计算", variant: "outline" },
+                actions: {
+                  onClick: {
+                    actionType: "click",
+                    payload: { intent: "recalc" },
+                  },
+                },
+              },
+            ],
           },
         ],
       },
@@ -150,6 +166,7 @@ async function main() {
         type: "catalog.charts/LineChart",
         props: {
           title: "Q1–Q4 营收示意",
+          height: 220,
           data: [
             { x: "Q1", y: 42 },
             { x: "Q2", y: 55 },

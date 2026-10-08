@@ -1,7 +1,7 @@
 import type { CatalogRegistry } from "./catalog/registry.js";
 
 /** Versioned prompt rules for design judgment (G1 Phase A). Not OpenAI RL weights. */
-export const PROMPT_FRAGMENT_VERSION = "0.1.6-g5g7";
+export const PROMPT_FRAGMENT_VERSION = "0.1.8-embed-p1";
 
 export function buildPromptFragment(
   catalog: CatalogRegistry,
@@ -56,7 +56,7 @@ export function buildPromptFragment(
   );
   lines.push("");
   lines.push(zh ? "## 组件启发式" : "## Component heuristics");
-  lines.push("- 表格数据 / 对比列 → `catalog.shadcn/DataTable`（或 Card+表，勿空壳）");
+  lines.push("- 表格数据 / 对比列 → `catalog.shadcn/DataTable`（或 Card+表，勿空壳）；columns 用 `{id,header}`（也认 `{key,label}`）");
   lines.push("- 趋势 / 时序 → `LineChart`/`catalog.charts/*`（若启用）否则 `DataTable` + 说明；**Chart 必须带 data**");
   lines.push("- 二选一 → `catalog.shadcn/ButtonGroup` 或两枚 `Button`");
   lines.push("- 填参计算 → `Form` + `Input`/`Slider` + `Button`；衍生值可用 session `reducers` / 节点 `expr`");
@@ -69,6 +69,28 @@ export function buildPromptFragment(
   lines.push("3. Never emit executable HTML/JS; only registered component types.");
   lines.push("4. Optional: call `policy_check` before propose when unsure (if enabled).");
   lines.push(`5. Density preference: ${density}.`);
+  lines.push("");
+  lines.push(zh ? "## 流式生成（P0 强制）" : "## Progressive streaming (P0 mandatory)");
+  lines.push(
+    zh
+      ? "- **对比 / 表格 / 多行列表**：禁止单次巨型 `mode=tree`。必须 `mode=ops` + `chunkDone:false` 分片 upsert：① Stack/壳 → ② DataTable 表头（空 rows）→ ③ 逐行 phone/商品 → ④ 最后一次 `chunkDone:true`。"
+      : "- **Comparisons / tables / multi-row lists**: do NOT one-shot `mode=tree`. Use `mode=ops` with `chunkDone:false`: (1) Stack shell → (2) DataTable headers (empty rows) → (3) upsert rows one-by-one → (4) final `chunkDone:true`.",
+  );
+  lines.push(
+    zh
+      ? "- 或用 `mode=streaming_chunks` 发 **JSONL**（每行一个完整 upsert op，行末 `\n`）；Host 会边收边画，勿等整段 JSON 闭合。"
+      : "- Or `mode=streaming_chunks` with **JSONL** (one complete upsert op per line + `\n`); Host paints each line; do not wait for a closed whole-tree JSON.",
+  );
+  lines.push(
+    zh
+      ? "- 联调验收只回 `embedUrl`（`ui_open` 返回，`?embed=1&sessionId=`）/ `hostUrl` / sessionId；优先让用户在旁栏 Simple Browser / iframe 打开 embed；**不要**用桌面截图挡首屏。"
+      : "- For demos: return `embedUrl` from `ui_open` (`?embed=1&sessionId=`) / `hostUrl` / sessionId; prefer Simple Browser / iframe beside chat; do **not** block first paint on desktop screenshots.",
+  );
+  lines.push(
+    zh
+      ? "- 若 `hostReady=false`：提示用户先 `IUI_SESSION_DIR=… npm run host`，再打开 `embedUrl`。"
+      : "- If `hostReady=false`: tell the user to run `IUI_SESSION_DIR=… npm run host`, then open `embedUrl`.",
+  );
   if (density === "plain_prefer") {
     lines.push(
       zh

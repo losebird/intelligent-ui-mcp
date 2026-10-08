@@ -13,6 +13,11 @@
 7. [`HOST-WINDOW.md`](./HOST-WINDOW.md) — ② 参考 Host 窗需求。
 8. [`CUSTOM-PACKAGE-MANIFEST.md`](./CUSTOM-PACKAGE-MANIFEST.md) — ④ 自定义包 manifest / 信任模型。
 9. [`EVAL-SET-V0.md`](./EVAL-SET-V0.md) — ⑥ 评测题集 v0 大纲。
+10. [`STREAMING-UX-GAP.md`](./STREAMING-UX-GAP.md) — 流式 UX vs OpenAI/OpenUI/OpenGenerativeUI 缺口与 P0/P1。
+11. [`HARNESSLESS-FEASIBILITY.md`](./HARNESSLESS-FEASIBILITY.md) — 「无 Renderer 壳也要气泡内 Intelligent UI」可行性（MCP 硬限制 / 选项排序 / 产品立场）。
+12. [`HOST-RENDERER-ADAPTER.md`](./HOST-RENDERER-ADAPTER.md) — **选项 A**：宿主产品嵌 `@intelligent-ui/renderer-react` 的契约（open/stream/action、最小 API、里程碑）。
+13. [`HOST-ADAPTER-M0-CHECKLIST.md`](./HOST-ADAPTER-M0-CHECKLIST.md) — 选项 A **M0**：`packages/host-adapter` 对照清单 → Webview/气泡 PoC 步骤。
+14. [`PRODUCT-BUBBLE-MOUNT.md`](./PRODUCT-BUBBLE-MOUNT.md) — **给 Cursor/Grok 产品+平台**：气泡挂载点 / 事件通道 / action 闭环需求（选项 A · M2）。
 
 ## 文件一览
 
@@ -26,6 +31,11 @@
 | `HOST-WINDOW.md` | G2 / ② | 参考渲染窗 |
 | `CUSTOM-PACKAGE-MANIFEST.md` | G4 / ④ | 注册即渲染规范 |
 | `EVAL-SET-V0.md` | G7 / ⑥ | ≥20 题意图 |
+| `STREAMING-UX-GAP.md` | G2/G3 体验 | 边输出边生成 UX 缺口与整改 |
+| `HARNESSLESS-FEASIBILITY.md` | G2/G9 产品边界 | 无壳气泡目标 vs MCP 硬限制；选项 A–D |
+| `HOST-RENDERER-ADAPTER.md` | 选项 A 宿主合作 | 气泡内嵌 renderer 契约；我们交付 vs 宿主建设 |
+| `HOST-ADAPTER-M0-CHECKLIST.md` | 选项 A / M0 | host-adapter 包验收；interim 泵 vs 产品通道；M1 Webview 预告 |
+| `PRODUCT-BUBBLE-MOUNT.md` | 选项 A / M2 产品需求 | Cursor/Grok 气泡 slot、低延迟 ui.* 通道、ProductBubbleChannel |
 
 ## 与代码的关系
 
@@ -34,6 +44,7 @@
 - **③ 已落地**：`mode=ops` / `streaming_chunks`、`ui_patch` / `ui_report_action`、actions watch + `ui_drain_actions`、状态机 + G6 骨架；`npm run stream-smoke`。
 - **④ 已落地**：`register_package` / `register_component` / `unregister` + 信任目录 + `examples/custom-packages/acme-gauges` + Host 动态 import；`npm run custom-smoke`。
 - **⑤ 已落地**：设计判断 = prompt + lint + 可选裁判（≠ OpenAI RL）；`policy_check` / `evaluate_expr`；G6 安全 expr + reducers；`npm run policy-smoke`。
+- **选项 A / M0 脚手架**：`packages/host-adapter`（`IntelligentUiHostSurface` + HTTP/NDJSON interim 泵 + `HostSurfaceView`）；产品气泡通道宿主自有。详见 `HOST-ADAPTER-M0-CHECKLIST.md`。
 - **⑥ 已落地**：`catalog.charts` 真渲染（Line/Bar/Pie）；`catalog.radix|mui|antd|chakra` schema-only + Host 别名；`evals/cases/*.json`（≥20）+ `npm run eval` / `eval:validate`；`npm run catalog-smoke`。G10 密度预留（Host 选择器 + prompt 一句偏好）。
 
 ## 术语速查

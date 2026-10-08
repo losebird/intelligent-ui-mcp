@@ -1,0 +1,18 @@
+{
+  "id": "eval-010",
+  "locale": "zh-CN",
+  "prompt": "用可点步骤说明怎么更换自行车内胎",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Accordion",
+      "catalog.shadcn/Card",
+      "catalog.shadcn/Button"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

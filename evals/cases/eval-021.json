@@ -1,0 +1,14 @@
+{
+  "id": "eval-021",
+  "locale": "zh-CN",
+  "prompt": "只回答 yes 或 no：地球绕着太阳转吗？",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

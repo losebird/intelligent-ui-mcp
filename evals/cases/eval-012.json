@@ -1,0 +1,18 @@
+{
+  "id": "eval-012",
+  "locale": "zh-CN",
+  "prompt": "解释光合作用，带一个可调光照强度看产物变化的示意",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui+state"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Slider",
+      "catalog.base/Markdown",
+      "catalog.shadcn/Badge"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

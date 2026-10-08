@@ -1,0 +1,16 @@
+{
+  "id": "eval-018",
+  "locale": "zh-CN",
+  "prompt": "用开关表示：启用通知 / 启用夜间模式",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Switch"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

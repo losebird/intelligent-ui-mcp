@@ -1,0 +1,18 @@
+{
+  "id": "eval-023",
+  "locale": "zh-CN",
+  "prompt": "我要自定义仪表盘控件（无包时）怎么 register_package？",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [
+      "catalog.base/Callout",
+      "catalog.base/CodeBlock"
+    ],
+    "forbidTypes": [],
+    "needsAction": false,
+    "notes": "纯文字说明如何 register_package，或 Callout+CodeBlock"
+  }
+}

@@ -1,0 +1,349 @@
+{
+  "version": "0.1",
+  "generatedAt": "2026-10-08T11:10:59.313Z",
+  "note": "Heuristic format_choice only — not OpenAI official benchmark; UI scores are manual (TEMPLATE.md)",
+  "casesTotal": 25,
+  "scored": 24,
+  "matched": 24,
+  "accuracy": 1,
+  "rows": [
+    {
+      "id": "eval-001",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.8,
+      "suggested_types": [],
+      "reasons": [
+        "plain: factual / arithmetic",
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-002",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.8,
+      "suggested_types": [],
+      "reasons": [
+        "plain: one-sentence definition",
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-003",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.8,
+      "suggested_types": [],
+      "reasons": [
+        "plain: factual / arithmetic",
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-004",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.8,
+      "suggested_types": [],
+      "reasons": [
+        "plain: factual / arithmetic",
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-005",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.7,
+      "suggested_types": [],
+      "reasons": [
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-006",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/DataTable",
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Tabs"
+      ],
+      "reasons": [
+        "ui: comparison"
+      ]
+    },
+    {
+      "id": "eval-007",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.79,
+      "suggested_types": [
+        "catalog.shadcn/DataTable",
+        "catalog.charts/LineChart",
+        "catalog.shadcn/Slider",
+        "catalog.base/Markdown",
+        "catalog.shadcn/Badge"
+      ],
+      "reasons": [
+        "ui: trend / chart",
+        "ui: interactive demo"
+      ]
+    },
+    {
+      "id": "eval-008",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Form",
+        "catalog.shadcn/Slider",
+        "catalog.shadcn/Input",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: calculator / adjustable params"
+      ]
+    },
+    {
+      "id": "eval-009",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Form",
+        "catalog.shadcn/Slider",
+        "catalog.shadcn/Input",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: calculator / adjustable params"
+      ]
+    },
+    {
+      "id": "eval-010",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Accordion",
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: step / process"
+      ]
+    },
+    {
+      "id": "eval-011",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/ButtonGroup",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: binary choice"
+      ]
+    },
+    {
+      "id": "eval-012",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.79,
+      "suggested_types": [
+        "catalog.shadcn/Form",
+        "catalog.shadcn/Slider",
+        "catalog.shadcn/Input",
+        "catalog.shadcn/Button",
+        "catalog.base/Markdown",
+        "catalog.shadcn/Badge"
+      ],
+      "reasons": [
+        "ui: calculator / adjustable params",
+        "ui: interactive demo"
+      ]
+    },
+    {
+      "id": "eval-013",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.7,
+      "suggested_types": [],
+      "reasons": [
+        "plain: explanation-only"
+      ]
+    },
+    {
+      "id": "eval-014",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Form",
+        "catalog.shadcn/Input",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: form prototype"
+      ]
+    },
+    {
+      "id": "eval-015",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-016",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.base/Callout",
+        "catalog.shadcn/AlertDialog"
+      ],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-017",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Progress"
+      ],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-018",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Switch"
+      ],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-019",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Select"
+      ],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-020",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Tabs"
+      ],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-021",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.9,
+      "suggested_types": [],
+      "reasons": [
+        "plain: yes/no",
+        "plain: boolean / closed question",
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-022",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/DataTable"
+      ],
+      "reasons": [
+        "ui: explicit UI widget ask"
+      ]
+    },
+    {
+      "id": "eval-023",
+      "expect": "plain_text",
+      "got": "plain_text",
+      "match": true,
+      "score": 0.7,
+      "suggested_types": [],
+      "reasons": [
+        "plain: short closed question heuristic"
+      ]
+    },
+    {
+      "id": "eval-024",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.antd/Button",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: schema-only / vendor button UI"
+      ]
+    },
+    {
+      "id": "eval-025",
+      "expect": "plain_text",
+      "got": "(host empty — skipped)",
+      "match": true,
+      "suggested_types": [],
+      "reasons": [
+        "hostEmpty skip"
+      ],
+      "skipped": true
+    }
+  ]
+}

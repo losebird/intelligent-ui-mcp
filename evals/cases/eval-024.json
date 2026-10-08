@@ -1,0 +1,19 @@
+{
+  "id": "eval-024",
+  "locale": "zh-CN",
+  "prompt": "同时启用 schema_only 的 antd 类型做按钮",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.antd/Button",
+      "catalog.shadcn/Button",
+      "catalog.base/Unknown"
+    ],
+    "forbidTypes": [],
+    "needsAction": false,
+    "notes": "允许 Unknown 或映射到 shadcn Button"
+  }
+}

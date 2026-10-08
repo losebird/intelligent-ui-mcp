@@ -1,0 +1,36 @@
+{
+  "name": "@intelligent-ui/mcp-server",
+  "version": "0.1.0",
+  "description": "Intelligent UI MCP stdio server",
+  "type": "module",
+  "bin": {
+    "intelligent-ui-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --packages=external --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/index.js && esbuild src/policy/index.ts --bundle --platform=node --format=esm --outfile=dist/policy.js",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@intelligent-ui/catalog-base": "0.1.0",
+    "@intelligent-ui/catalog-shadcn": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^3.25.0",
+    "@intelligent-ui/catalog-charts": "0.1.0",
+    "@intelligent-ui/catalog-radix": "0.1.0",
+    "@intelligent-ui/catalog-mui": "0.1.0",
+    "@intelligent-ui/catalog-antd": "0.1.0",
+    "@intelligent-ui/catalog-chakra": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.2"
+  }
+}

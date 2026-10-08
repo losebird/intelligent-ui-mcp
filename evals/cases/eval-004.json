@@ -1,0 +1,14 @@
+{
+  "id": "eval-004",
+  "locale": "zh-CN",
+  "prompt": "今天星期几？",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

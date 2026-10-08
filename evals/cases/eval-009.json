@@ -1,0 +1,19 @@
+{
+  "id": "eval-009",
+  "locale": "zh-CN",
+  "prompt": "三个人 AA 制，录入每人垫资，算出谁该付给谁",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui+state"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/DataTable",
+      "catalog.shadcn/Input",
+      "catalog.shadcn/Button",
+      "catalog.shadcn/Form"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

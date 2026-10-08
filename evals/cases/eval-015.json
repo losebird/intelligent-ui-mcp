@@ -1,0 +1,16 @@
+{
+  "id": "eval-015",
+  "locale": "zh-CN",
+  "prompt": "把这段 JSON 格式化显示：{\"a\":1,\"b\":[2,3]}",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.base/CodeBlock"
+    ],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

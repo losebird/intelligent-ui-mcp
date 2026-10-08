@@ -1,0 +1,17 @@
+{
+  "id": "eval-013",
+  "locale": "zh-CN",
+  "prompt": "列出登录表单该有的字段（只要说明）",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [],
+    "forbidTypes": [
+      "catalog.shadcn/Input"
+    ],
+    "needsAction": false,
+    "notes": "说明即可，勿真出密码框"
+  }
+}

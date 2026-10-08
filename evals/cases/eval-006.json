@@ -1,0 +1,18 @@
+{
+  "id": "eval-006",
+  "locale": "zh-CN",
+  "prompt": "对比 iPhone 16 / Pixel 9 / Galaxy S25 的续航与售价（可虚构表）",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/DataTable",
+      "catalog.shadcn/Card",
+      "catalog.shadcn/Tabs"
+    ],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

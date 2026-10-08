@@ -1,0 +1,17 @@
+{
+  "id": "eval-007",
+  "locale": "zh-CN",
+  "prompt": "画一个展示 Q1–Q4 营收趋势的示意折线（虚构数据）",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.charts/LineChart",
+      "catalog.shadcn/DataTable"
+    ],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

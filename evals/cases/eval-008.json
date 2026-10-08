@@ -1,0 +1,19 @@
+{
+  "id": "eval-008",
+  "locale": "zh-CN",
+  "prompt": "帮我做一个小费计算器：账单金额、小费比例、人数",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui+state"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Slider",
+      "catalog.shadcn/Input",
+      "catalog.shadcn/Form",
+      "catalog.shadcn/Button"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

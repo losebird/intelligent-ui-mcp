@@ -1,0 +1,14 @@
+{
+  "id": "eval-001",
+  "locale": "zh-CN",
+  "prompt": "巴黎是哪个国家的首都？",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "eval-005",
+  "locale": "zh-CN",
+  "prompt": "把下面三个词按字母排序：pear, apple, orange",
+  "expect": {
+    "format": "plain_text",
+    "tags": [
+      "plain"
+    ],
+    "anyOfTypes": [
+      "catalog.base/Markdown"
+    ],
+    "forbidTypes": [
+      "catalog.shadcn/Card"
+    ],
+    "needsAction": false,
+    "notes": "纯文字或极简 Markdown 列表；勿大 Card"
+  }
+}

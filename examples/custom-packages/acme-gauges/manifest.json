@@ -1,0 +1,36 @@
+{
+  "$schema": "https://intelligent-ui-mcp.local/schemas/package-manifest-0.1.json",
+  "id": "acme.gauges",
+  "title": "Acme Gauges",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Example custom package: semi-circle Gauge",
+  "engines": {
+    "intelligentUiMcp": ">=0.1.0 <0.2.0"
+  },
+  "renderer": {
+    "entry": "./dist/render.js",
+    "hash": "sha256-c2b7793baf9e91dd9b6f3232caaa08fc217d7aa5e6778759b27bdaf02928f77c",
+    "exports": {
+      "Gauge": "Gauge"
+    }
+  },
+  "components": [
+    {
+      "name": "Gauge",
+      "description": "半圆仪表盘，展示 0–max 数值",
+      "propsSchema": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {
+          "value": { "type": "number" },
+          "max": { "type": "number", "default": 100 },
+          "label": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "actions": ["change"],
+      "enabledByDefault": true
+    }
+  ]
+}

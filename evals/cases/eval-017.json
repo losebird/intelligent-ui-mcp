@@ -1,0 +1,16 @@
+{
+  "id": "eval-017",
+  "locale": "zh-CN",
+  "prompt": "进度大概 65%，显示一下",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "ui"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Progress"
+    ],
+    "forbidTypes": [],
+    "needsAction": false
+  }
+}

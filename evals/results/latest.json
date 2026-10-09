@@ -1,10 +1,10 @@
 {
   "version": "0.1",
-  "generatedAt": "2026-10-08T11:10:59.313Z",
+  "generatedAt": "2026-10-09T17:40:28.615Z",
   "note": "Heuristic format_choice only — not OpenAI official benchmark; UI scores are manual (TEMPLATE.md)",
-  "casesTotal": 25,
-  "scored": 24,
-  "matched": 24,
+  "casesTotal": 33,
+  "scored": 32,
+  "matched": 32,
   "accuracy": 1,
   "rows": [
     {
@@ -73,6 +73,7 @@
       "match": true,
       "score": 0.67,
       "suggested_types": [
+        "catalog.shadcn/Comparison",
         "catalog.shadcn/DataTable",
         "catalog.shadcn/Card",
         "catalog.shadcn/Tabs"
@@ -314,9 +315,10 @@
       "expect": "plain_text",
       "got": "plain_text",
       "match": true,
-      "score": 0.7,
+      "score": 0.8,
       "suggested_types": [],
       "reasons": [
+        "plain: explanation-only",
         "plain: short closed question heuristic"
       ]
     },
@@ -344,6 +346,129 @@
         "hostEmpty skip"
       ],
       "skipped": true
+    },
+    {
+      "id": "eval-026",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Form",
+        "catalog.shadcn/Slider",
+        "catalog.shadcn/Input",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: calculator / adjustable params"
+      ]
+    },
+    {
+      "id": "eval-027",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Comparison",
+        "catalog.shadcn/DataTable",
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Tabs"
+      ],
+      "reasons": [
+        "ui: comparison"
+      ]
+    },
+    {
+      "id": "eval-028",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Accordion",
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Button"
+      ],
+      "reasons": [
+        "ui: step / process"
+      ]
+    },
+    {
+      "id": "eval-029",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Checklist"
+      ],
+      "reasons": [
+        "ui: checklist"
+      ]
+    },
+    {
+      "id": "eval-030",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Progress",
+        "catalog.base/Grid",
+        "catalog.charts/LineChart"
+      ],
+      "reasons": [
+        "ui: resource / system dashboard"
+      ]
+    },
+    {
+      "id": "eval-031",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Card",
+        "catalog.base/Stack",
+        "catalog.charts/LineChart"
+      ],
+      "reasons": [
+        "ui: weather card"
+      ]
+    },
+    {
+      "id": "eval-032",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Form",
+        "catalog.shadcn/Input",
+        "catalog.shadcn/ButtonGroup",
+        "catalog.shadcn/Card"
+      ],
+      "reasons": [
+        "ui: multi-field intake form"
+      ]
+    },
+    {
+      "id": "eval-033",
+      "expect": "ui",
+      "got": "ui",
+      "match": true,
+      "score": 0.67,
+      "suggested_types": [
+        "catalog.shadcn/Comparison",
+        "catalog.shadcn/DataTable",
+        "catalog.shadcn/Card",
+        "catalog.shadcn/Tabs"
+      ],
+      "reasons": [
+        "ui: comparison"
+      ]
     }
   ]
 }

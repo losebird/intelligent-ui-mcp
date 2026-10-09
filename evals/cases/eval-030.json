@@ -1,0 +1,17 @@
+{
+  "id": "eval-030",
+  "locale": "zh-CN",
+  "prompt": "现在我的电脑内存怎么样",
+  "expect": {
+    "format": "ui",
+    "tags": ["ui", "resource-board"],
+    "anyOfTypes": [
+      "catalog.shadcn/Card",
+      "catalog.shadcn/Progress",
+      "catalog.base/Grid"
+    ],
+    "forbidTypes": [],
+    "needsAction": false,
+    "notes": "自然问资源状态 → 指标磁贴，不要纯文字；无需口头禅"
+  }
+}

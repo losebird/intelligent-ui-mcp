@@ -8,7 +8,7 @@ import {
   unregisterPackageOrComponent,
 } from "./catalog/register.js";
 import { SessionStore } from "./session/store.js";
-import { buildPromptFragment } from "./prompt.js";
+import { buildAlwaysOnInstructions, buildPromptFragment } from "./prompt.js";
 import { errResult, okResult, textContent } from "./protocol.js";
 import type { UiNode } from "./protocol.js";
 import type { UiOp } from "./session/ops.js";
@@ -37,10 +37,17 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
   // Seed empty registry.json so Host can poll immediately
   hostRegistry.writeRegistry(catalog.listHostPackages());
 
-  const server = new McpServer({
-    name: "intelligent-ui-mcp",
-    version: "0.1.0",
-  });
+  // Always-on steer: MCP initialize `instructions` so dsh-mcp-client / Cursor
+  // inject selection rules without an explicit get_prompt_fragment call.
+  const server = new McpServer(
+    {
+      name: "intelligent-ui-mcp",
+      version: "0.1.0",
+    },
+    {
+      instructions: buildAlwaysOnInstructions({ locale: "zh-CN", includeRecipes: true }),
+    },
+  );
 
   server.tool(
     "list_packages",
@@ -104,12 +111,12 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "get_prompt_fragment",
-    "System prompt fragment teaching the model how to use Intelligent UI",
+    "Full UI selection rules + recipes. Already injected as MCP server instructions on initialize — do not wait for the user to say “use Intelligent UI”, and you do not need to call this before ui_open. Use only if you need the enabled catalog list or extra examples.",
     {
       locale: z.string().optional().default("zh-CN"),
       density: z.enum(["full", "compact", "plain_prefer"]).optional().default("full"),
       includeExamples: z.boolean().optional().default(true),
-      maxChars: z.number().int().optional().default(6000),
+      maxChars: z.number().int().optional().default(12000),
     },
     async (args) => {
       const { fragment, enabledTypes, version } = buildPromptFragment(catalog, args);
@@ -146,7 +153,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "ui_open",
-    "Open a UI session; writes ui.open to NDJSON bypass. Probes / auto-spawns reference Host + optional browser; returns hostUrl, embedUrl, openUrl (token), hostReady, hostHint, launchCmd.",
+    "Open a UI session; writes ui.open to NDJSON bypass. For resource/weather/intake/compare asks, call this then ui_propose in the SAME turn with a real tree/ops (no empty shell, no plainTextFallback). Probes / auto-spawns reference Host + optional browser; returns hostUrl, embedUrl, openUrl (token), hostReady, hostHint, launchCmd.",
     {
       sessionId: z.string().optional(),
       title: z.string().optional(),
@@ -185,6 +192,8 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
           launchCmd: host.launchCmd,
           tokenFile: host.tokenFile,
           hostHint: host.hostHint,
+          sameTurnPropose:
+            "Call ui_propose in this turn with a real tree/ops. Resource/weather/intake/compare: no empty shell, no plainTextFallback.",
         }),
       );
     },
@@ -192,7 +201,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "ui_propose",
-    "Propose UI with progressive paint. DEFAULT for comparisons/tables/multi-row lists: mode=ops + chunkDone:false shard upserts (① Stack shell → ② DataTable headers empty rows → ③ row-by-row → ④ final chunkDone:true). Do NOT one-shot a full tree for demos. mode=tree only for tiny single-shot forms/plainTextFallback. mode=streaming_chunks = JSONL ops (one op per line, apply immediately). Omitting mode infers ops if ops[] present, else tree. Omitting chunkDone on ops keeps partial/streaming until chunkDone:true. Optional query/forceUi for policy gate.",
+    "Propose UI with progressive paint. SAME-TURN required after ui_open for resource boards, weather cards, intake forms, and A-vs-B compares — real tree/ops, never empty shell, never plainTextFallback. DEFAULT for comparisons/tables/multi-row lists: mode=ops + chunkDone:false shard upserts (① Stack shell → ② DataTable headers empty rows → ③ row-by-row → ④ final chunkDone:true). Do NOT one-shot a full tree for demos. mode=tree OK for resource/weather/intake one-shots. mode=streaming_chunks = JSONL ops (one op per line, apply immediately). Omitting mode infers ops if ops[] present, else tree. Omitting chunkDone on ops keeps partial/streaming until chunkDone:true. Optional query/forceUi for policy gate.",
     {
       sessionId: z.string(),
       mode: z.enum(["tree", "ops", "streaming_chunks"]).optional(),

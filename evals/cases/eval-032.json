@@ -1,0 +1,17 @@
+{
+  "id": "eval-032",
+  "locale": "zh-CN",
+  "prompt": "给我写一篇博士生的毕业论文",
+  "expect": {
+    "format": "ui",
+    "tags": ["ui", "intake-form"],
+    "anyOfTypes": [
+      "catalog.shadcn/Form",
+      "catalog.shadcn/ButtonGroup",
+      "catalog.shadcn/Input"
+    ],
+    "forbidTypes": [],
+    "needsAction": true,
+    "notes": "缺参长文交付 → 多字段采集表单（学科/题目/语言/格式），不要 Markdown 追问"
+  }
+}

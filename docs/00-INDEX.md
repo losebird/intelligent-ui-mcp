@@ -69,3 +69,4 @@
 - [`HF-TEMPLATES.md`](./HF-TEMPLATES.md) — 高频模板 Calculator/Comparison/Stepper/Checklist/MapStub/GameShell
 - [`DATA-VS-RENDER.md`](./DATA-VS-RENDER.md) — Data vs Render tool；防整卡/iframe remount
 - [`AUDIT-P1-IFRAME-ACTION.md`](./AUDIT-P1-IFRAME-ACTION.md) — iframe action 回传对齐
+- [`AUTO-STEER-NATURAL-ASKS.md`](./AUTO-STEER-NATURAL-ASKS.md) — 自然问句自动选用 UI；MCP instructions；兄弟插件 PROMPT_TEXT 补丁

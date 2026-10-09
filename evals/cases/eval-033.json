@@ -1,0 +1,17 @@
+{
+  "id": "eval-033",
+  "locale": "zh-CN",
+  "prompt": "A 方案和 B 方案比哪个好",
+  "expect": {
+    "format": "ui",
+    "tags": ["ui", "compare"],
+    "anyOfTypes": [
+      "catalog.shadcn/Comparison",
+      "catalog.shadcn/DataTable",
+      "catalog.shadcn/Card"
+    ],
+    "forbidTypes": [],
+    "needsAction": false,
+    "notes": "A vs B → Comparison/DataTable，mode=ops 分片"
+  }
+}

@@ -82,12 +82,14 @@ Host HTTP（`/api/current`、`/api/snapshot|events|…`、`POST /api/action`）�
 推荐顺序：
 
 1. 设置 `IUI_SESSION_DIR`（及可选 `IUI_HOST_TOKEN`）
-2. `npm run host` → 浏览器打开 Host
-3. Cursor / harness 连接 MCP，调用 `ui_open` → Host 顶栏出现 session
-4. （可选）`register_package` 自定义包 → Host 读 `registry.json`，经 `/api/package-entry` + iframe 沙箱加载
+2. Cursor / harness 连接 MCP
+3. 调用 `ui_open` → **默认自动** probe；未就绪则 spawn `npm run host` 并打开浏览器一键 URL（`openUrl`，含 `sessionId`+`token`）。也可手动：`npm run host` 后打开返回的 `openUrl` / `embedUrl`
+4. （可选）`register_package` 自定义包（**`strictHash` 默认 true**）→ Host 读 `registry.json`，经 `/api/package-entry`（再验 hash）+ iframe 沙箱加载
 5. `ui_propose`（tree 或 ops）出树 → 主区渲染控件
 6. 点击 Button / 拖滑条 → Host 写 `{sessionId}.actions.ndjson`
 7. MCP **watch 入库**并广播 `ui.action`；harness 用 `ui_drain_actions` 取走 → `ui_patch` 更新衍生节点
+
+关掉自动拉起：`IUI_AUTO_HOST=0 IUI_AUTO_OPEN_BROWSER=0`（冒烟脚本已默认关掉）。详见 [`docs/AUDIT-P1-AUTO-HOST.md`](./docs/AUDIT-P1-AUTO-HOST.md)。
 
 Host 只读文件旁路 + 本机 Vite middleware API；崩溃不影响 MCP。
 
@@ -127,7 +129,7 @@ npm run eval          # heuristic format table → evals/results/latest.md
 | `set_enabled_components` | 启停单个控件 |
 | `get_prompt_fragment` | 给模型的 UI 选用说明 |
 | `get_json_schema` | 拉 props / 树 schema |
-| `ui_open` | 开 session + 写旁路 + 启动 actions watch |
+| `ui_open` | 开 session + 写旁路 + actions watch；**probe/自动 spawn Host + 开浏览器**；返回 `openUrl`/`hostHint`/`launchCmd` |
 | `ui_propose` | `tree` 整树 / `ops` 增量 / `streaming_chunks`（chunkDone 时整段 parse） |
 | `ui_patch` | 局部 ops；`action_pending` → `idle` |
 | `ui_report_action` | 记账 + `ui.action`；`state.set` 写 state |
@@ -172,7 +174,7 @@ npm run eval          # heuristic format table → evals/results/latest.md
 node scripts/hash-package-entry.mjs examples/custom-packages/acme-gauges/dist/render.js
 ```
 
-`register_package({ path, enable?, strictHash? })`：`strictHash` 默认 true；缺 hash → `HASH_MISSING`；错 hash → `HASH_MISMATCH`；目录外 → `PATH_NOT_TRUSTED`。  
+`register_package({ path, enable?, strictHash? })`：`strictHash` **默认 true**（省略即强制；`strictHash:false` 或 `IUI_STRICT_HASH=0` 才跳过）；缺 hash → `HASH_MISSING`；错 hash → `HASH_MISMATCH`；目录外 → `PATH_NOT_TRUSTED`。Host `package-entry` 会再验 hash（409）。  
 **永不** eval 模型 JS；不支持 npm/url。
 
 Host：轮询 `GET /api/packages` → `GET /api/package-entry/:id` 取源码 → iframe 沙箱按 `exports` 映射到 `UiRenderer.extraRenderers`；失败黄条 / Sandbox error。
@@ -228,7 +230,11 @@ scripts/custom-package-smoke.mjs
 | `IUI_HOST_TOKEN` | （自动生成到 token 文件） | Host API 共享密钥；MCP 与 Host **必须一致** |
 | `IUI_HOST_TOKEN_FILE` | `~/.intelligent-ui-mcp/host-token` | token 落盘路径（0600） |
 | `IUI_CORS_ORIGINS` | （空） | 额外允许的 CORS Origin（逗号分隔）；默认仅 loopback |
-| `IUI_HOST_URL` | `http://127.0.0.1:5173` | `ui_open` probe / embed 基址 |
+| `IUI_HOST_URL` | `http://127.0.0.1:5173` | `ui_open` probe / embed / openUrl 基址 |
+| `IUI_AUTO_HOST` | `1` | `ui_open` 时 Host 未就绪则后台 `npm run host` |
+| `IUI_AUTO_OPEN_BROWSER` | `1` | `ui_open` 后打开一键 `openUrl`（含 token） |
+| `IUI_HOST_SPAWN_WAIT_MS` | `2800` | spawn 后等待 `/api/health` 上限 |
+| `IUI_STRICT_HASH` | `1` | 自定义包注册与 Host `package-entry` 默认强制 hash |
 | `IUI_ACTION_TIMEOUT_MS` | `120000` | `action_pending` 超时回 idle |
 | `IUI_TRUSTED_DIRS` | （追加到默认三目录） | `:` 或 OS 分隔的额外绝对信任路径 |
 | `IUI_REPO_ROOT` | 自动探测 | monorepo 根（解析默认信任目录） |

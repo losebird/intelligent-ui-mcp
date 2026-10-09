@@ -8,7 +8,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   applyStrictCors,
   ensureHostToken,
@@ -418,11 +418,37 @@ export function createSessionMiddleware(sessionDir, opts = {}) {
           });
         }
         const source = fs.readFileSync(realEntry, "utf8");
+        const actualHash =
+          "sha256-" + createHash("sha256").update(source, "utf8").digest("hex");
+        const expectedHash =
+          typeof rec.hash === "string" && rec.hash.trim() ? rec.hash.trim() : null;
+        const strictHashEnv = (process.env.IUI_STRICT_HASH ?? "1").trim().toLowerCase();
+        const strictHash =
+          !["0", "false", "off", "no"].includes(strictHashEnv);
+        if (strictHash) {
+          if (!expectedHash) {
+            return sendJson(res, 409, {
+              ok: false,
+              error: "HASH_MISSING",
+              packageId,
+              message: "registry hash required when IUI_STRICT_HASH is on (default)",
+            });
+          }
+          if (expectedHash.toLowerCase() !== actualHash.toLowerCase()) {
+            return sendJson(res, 409, {
+              ok: false,
+              error: "HASH_MISMATCH",
+              packageId,
+              expected: expectedHash,
+              actual: actualHash,
+            });
+          }
+        }
         return sendJson(res, 200, {
           ok: true,
           packageId,
           entryAbsPath: realEntry,
-          hash: rec.hash ?? null,
+          hash: expectedHash ?? actualHash,
           bytes: Buffer.byteLength(source, "utf8"),
           source,
         });

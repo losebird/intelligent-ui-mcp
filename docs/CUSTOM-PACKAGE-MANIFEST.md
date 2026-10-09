@@ -64,7 +64,7 @@ my-gauge-pack/
 |------|------|
 | `id` | 小写点分；**禁止**以 `catalog.` 开头（保留给内置） |
 | `renderer.entry` | 相对 manifest 目录；规范化后必须仍在包根下（防 `..`） |
-| `renderer.hash` | 可选但 **`strictHash: true`（默认）时必填**；对 entry 文件字节做 sha256，格式 `sha256-<hex>` |
+| `renderer.hash` | 可选但 **`strictHash` 默认 true（省略即强制；`IUI_STRICT_HASH=0` 或 `strictHash:false` 才跳过）时必填**；对 entry 文件字节做 sha256，格式 `sha256-<hex>`。Host `GET /api/package-entry` 会再验，错/缺 → 409 |
 | `renderer.exports` | 组件 name → ESM export 名；缺省 export 名 = name |
 | `components[].propsSchema` | 内联 JSON Schema draft-07 子集；或 `{ "$refFile": "./schemas/Gauge.json" }` |
 | `components[].name` | PascalCase |

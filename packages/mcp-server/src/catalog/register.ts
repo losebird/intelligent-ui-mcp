@@ -12,9 +12,19 @@ import {
 } from "./trusted.js";
 import type { HostPackageRecord, HostRegistryBypass } from "./host-registry-bypass.js";
 
+/** Default true. Set IUI_STRICT_HASH=0|false to allow omit/mismatch without tool flag. */
+export function resolveStrictHashDefault(): boolean {
+  const raw = process.env.IUI_STRICT_HASH;
+  if (raw === undefined || raw === "") return true;
+  const v = raw.trim().toLowerCase();
+  if (["0", "false", "off", "no"].includes(v)) return false;
+  return true;
+}
+
 export interface RegisterPackageInput {
   path: string;
   enable?: boolean;
+  /** When omitted, uses resolveStrictHashDefault() (true unless IUI_STRICT_HASH=0). */
   strictHash?: boolean;
 }
 
@@ -101,7 +111,9 @@ export function registerPackageFromPath(
   input: RegisterPackageInput,
 ): RegisterResult {
   const enable = input.enable !== false;
-  const strictHash = input.strictHash !== false;
+  // Explicit false turns off; omit → IUI_STRICT_HASH default true.
+  const strictHash =
+    input.strictHash !== undefined ? input.strictHash : resolveStrictHashDefault();
   const warnings: string[] = [];
 
   const repoRoot = resolveRepoRoot();

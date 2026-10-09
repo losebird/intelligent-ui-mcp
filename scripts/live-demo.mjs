@@ -234,9 +234,14 @@ async function main() {
   const api = await startSessionApiServer({ sessionDir, port: 0 });
   const actionId = `a_live_${Date.now().toString(36)}`;
   const postOnce = async (id) => {
+    const token = api.hostToken || process.env.IUI_HOST_TOKEN || "";
     const res = await fetch(`http://127.0.0.1:${api.port}/api/action`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "X-IUI-Host-Token": token,
+      },
       body: JSON.stringify({
         actionId: id,
         sessionId,

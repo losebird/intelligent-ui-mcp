@@ -33,7 +33,8 @@ npm run build
       "command": "node",
       "args": ["/ABS/intelligent-ui-mcp/packages/mcp-server/dist/index.js"],
       "env": {
-        "IUI_SESSION_DIR": "/ABS/.intelligent-ui-mcp/sessions"
+        "IUI_SESSION_DIR": "/ABS/.intelligent-ui-mcp/sessions",
+        "IUI_HOST_TOKEN": "replace-with-shared-secret"
       }
     }
   }
@@ -44,6 +45,8 @@ npm run build
 
 ```bash
 export IUI_SESSION_DIR="$HOME/.intelligent-ui-mcp/sessions"
+# 可选：显式共享 Host API 密钥（不设则自动读写 ~/.intelligent-ui-mcp/host-token）
+# export IUI_HOST_TOKEN="your-shared-secret"
 npm start
 # 等价：node packages/mcp-server/dist/index.js
 ```
@@ -56,13 +59,29 @@ npm start
 
 ```bash
 export IUI_SESSION_DIR="$HOME/.intelligent-ui-mcp/sessions"
+# 与 MCP 使用同一 IUI_HOST_TOKEN（或同一 host-token 文件）
+# export IUI_HOST_TOKEN="your-shared-secret"
 npm run host
 # 打开终端提示的本机 URL（默认 http://127.0.0.1:5173）
 ```
 
+### Host API 鉴权（必读）
+
+Host HTTP（`/api/current`、`/api/snapshot|events|…`、`POST /api/action`）需要共享密钥；**仅 `GET /api/health` 可匿名**（供 `ui_open` probe）。
+
+| 配置 | 说明 |
+|------|------|
+| `IUI_HOST_TOKEN` | 推荐。MCP 与 Host **必须相同** |
+| `IUI_HOST_TOKEN_FILE` | 可选；默认 `~/.intelligent-ui-mcp/host-token`（0600）。未设 env 时自动生成并复用 |
+| 请求携带 | `Authorization: Bearer <token>` 或头 `X-IUI-Host-Token` 或查询 `?token=` |
+| CORS | **不**反射任意 Origin；仅 loopback（`127.0.0.1` / `localhost` / `::1`）。额外来源用 `IUI_CORS_ORIGINS`（逗号分隔） |
+| 无 token | 受保护路由 → **401**；非白名单 Origin → **403** |
+
+参考 Host 窗会经 Vite 注入同进程 token；外部客户端（smoke / adapter）须自行带头。
+
 推荐顺序：
 
-1. 设置 `IUI_SESSION_DIR`
+1. 设置 `IUI_SESSION_DIR`（及可选 `IUI_HOST_TOKEN`）
 2. `npm run host` → 浏览器打开 Host
 3. Cursor / harness 连接 MCP，调用 `ui_open` → Host 顶栏出现 session
 4. （可选）`register_package` 自定义包 → Host 读 `registry.json` 动态加载
@@ -204,6 +223,10 @@ scripts/custom-package-smoke.mjs
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `IUI_SESSION_DIR` | `~/.intelligent-ui-mcp/sessions` | 事件/快照/actions/registry 旁路（MCP 与 Host **必须一致**） |
+| `IUI_HOST_TOKEN` | （自动生成到 token 文件） | Host API 共享密钥；MCP 与 Host **必须一致** |
+| `IUI_HOST_TOKEN_FILE` | `~/.intelligent-ui-mcp/host-token` | token 落盘路径（0600） |
+| `IUI_CORS_ORIGINS` | （空） | 额外允许的 CORS Origin（逗号分隔）；默认仅 loopback |
+| `IUI_HOST_URL` | `http://127.0.0.1:5173` | `ui_open` probe / embed 基址 |
 | `IUI_ACTION_TIMEOUT_MS` | `120000` | `action_pending` 超时回 idle |
 | `IUI_TRUSTED_DIRS` | （追加到默认三目录） | `:` 或 OS 分隔的额外绝对信任路径 |
 | `IUI_REPO_ROOT` | 自动探测 | monorepo 根（解析默认信任目录） |
@@ -224,7 +247,7 @@ npm run eval            # → evals/results/latest.md
 
 ## ③ 已知简化
 
-- `streaming_chunks`：**仅在 `chunkDone=true` 时整段 JSON.parse**（树 / `{tree}` / `{ops}`）；不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
+- `streaming_chunks`：**`mode=ops` + JSONL 行**在到达时即 apply（不必等 `chunkDone`）；非 JSONL 缓冲仍在 `chunkDone=true` 时整段 JSON.parse（树 / `{tree}` / `{ops}`）。不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
 - `refresh`：可选字段；若传入仅记 warnings 别名，ops 照常应用。
 - `replace_tree`：作为 ops 便利算子（整树替换），与事件 `ui.replace` 并存。
 

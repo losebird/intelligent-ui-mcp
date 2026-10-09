@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
-  createHttpEventPump,
+  createHostEventPump,
   createIntelligentUiHostSurface,
   type HostSurface,
   type SessionMirror,
@@ -10,6 +10,7 @@ import type { RenderAction } from "@intelligent-ui/renderer-react";
 import {
   fetchConfig,
   postAction,
+  resolveClientHostToken,
   type CurrentPointer,
 } from "./api";
 import { useCustomPackages } from "./useCustomPackages";
@@ -52,6 +53,7 @@ export function App() {
   );
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [transport, setTransport] = useState<string>("sse");
   const [copied, setCopied] = useState(false);
   const { extraRenderers, banner: packageBanner } = useCustomPackages();
   const [densityOverride, setDensityOverride] = useState<
@@ -81,7 +83,7 @@ export function App() {
       .catch((e) => setPollError(String(e)));
   }, []);
 
-  // M1: replace homemade poll with host-adapter HTTP pump + surface
+  // M1+: host-adapter pump — prefer SSE (/api/stream), fall back to HTTP poll
   useEffect(() => {
     surface.onAction(async (action: RenderAction, sessionId: string) => {
       const actionId = makeActionId();
@@ -103,13 +105,17 @@ export function App() {
       }
     });
 
-    const pump = createHttpEventPump({
+    const pump = createHostEventPump({
+      preferSse: true,
       pollMs: 150,
       syncSnapshot: true,
       wireActions: false,
+      token: resolveClientHostToken(),
       sessionId: mode.pinnedSessionId,
       stickyFails: 3,
       backoffMaxMs: 2000,
+      sseFallbackAfter: 3,
+      onTransport: (t) => setTransport(t),
       onCurrent: (info) => {
         if (info.sessionDir) setSessionDir(info.sessionDir);
         setCurrent(info.current);
@@ -241,6 +247,9 @@ export function App() {
           <span title="status" className={`host-status host-status-${statusLabel}`}>
             <em>status</em> {statusLabel}
           </span>
+          <span title="event transport" className="host-transport">
+            <em>xfer</em> {transport}
+          </span>
           {mirror?.title ? (
             <span title="title">
               <em>title</em> {mirror.title}
@@ -293,7 +302,7 @@ export function App() {
 
       {pollError ? (
         <div className="host-banner-error" role="alert">
-          轮询失败（将自动重试）：{pollError}
+          事件通道失败（将自动重试 / 回退轮询）：{pollError}
         </div>
       ) : null}
       {packageBanner ? (
@@ -329,7 +338,7 @@ export function App() {
       {!mode.embed ? (
         <footer className="host-bottom">
           <div className="host-bottom-title">
-            最近 ui.action / ui.error / 本地 action（M1: host-adapter pump）
+            最近 ui.action / ui.error / 本地 action（M1+: SSE / poll fallback）
           </div>
           <ul className="host-log">
             {logs.length === 0 ? (

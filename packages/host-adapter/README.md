@@ -19,19 +19,20 @@ Peer：`react` / `react-dom` 18+（仅用 `HostSurfaceView` 时需要）。
 ```ts
 import {
   createIntelligentUiHostSurface,
-  createHttpEventPump,
+  createHostEventPump,
 } from "@intelligent-ui/host-adapter";
 
 const surface = createIntelligentUiHostSurface();
 surface.onAction((action, sessionId) => {
   // 生产：经 harness 调 ui_report_action
-  // PoC：HTTP 泵 attachActionBridge / wireActions
+  // PoC：wireActions / attachActionBridge
   console.log(sessionId, action);
 });
 
-// Interim：跟 apps/host-window 同一套 /api/*
-const stop = createHttpEventPump({
+// Prefer SSE /api/stream; fall back to HTTP short-poll
+const stop = createHostEventPump({
   baseUrl: "http://127.0.0.1:5173",
+  token: process.env.IUI_HOST_TOKEN, // same secret as Host / MCP
   wireActions: true,
 }).start(surface);
 
@@ -46,7 +47,9 @@ const stop = createHttpEventPump({
 |------|------|------|
 | `createIntelligentUiHostSurface` | **可用** | 本地镜像 + applyOps |
 | `applyOps` / `UiOp` | **可用** | 与 mcp-server ops 同步的客户端实现 |
-| `createHttpEventPump` | **可用** | 轮询 Host `/api/current|snapshot|events` + 可选 `POST /api/action` |
+| `createHostEventPump` | **可用** | **优先 SSE** `/api/stream`，失败回退 HTTP 轮询 |
+| `createSseEventPump` | **可用** | 仅 SSE（fetch stream + Bearer） |
+| `createHttpEventPump` | **可用** | JSON 短轮询 `/api/current|snapshot|events`（回退） |
 | `createNdjsonEventPump` | **可用** | 注入 `readEvents` 的 NDJSON 旁路（Node/PoC） |
 | `HostSurfaceView`（`/react`） | **可用** | 包 `UiRenderer` + 生成中/错误 chrome |
 | `createProductBubbleChannelStub` | **stub** | 产品通道占位；`start()` 抛错提示改用 interim 泵 |
@@ -56,7 +59,7 @@ const stop = createHttpEventPump({
 | | host-window | host-adapter |
 |--|-------------|--------------|
 | 角色 | 参考 Host 窗（选项 B 默认面；**M1 已接本包**） | 选项 A SDK / Webview·气泡 PoC 内核 |
-| 事件 | `createHttpEventPump` → surface | surface.applyEvent + 可选 snapshot 校正 |
+| 事件 | `createHostEventPump`（SSE→poll）→ surface | surface.applyEvent + 可选 snapshot 校正 |
 | 挂载 | 整窗 App + `HostSurfaceView` | 可嵌任意 React slot |
 
 ## 非目标

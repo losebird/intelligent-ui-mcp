@@ -19,6 +19,17 @@ function apiUrl(baseUrl: string | undefined, path: string): string {
   return `${base}${path}`;
 }
 
+
+function authHeaders(token: string | undefined, extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...(extra ?? {}) };
+  const t = (token ?? "").trim();
+  if (t) {
+    headers.Authorization = `Bearer ${t}`;
+    headers["X-IUI-Host-Token"] = t;
+  }
+  return headers;
+}
+
 async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
@@ -34,13 +45,17 @@ function isRetryableFetchError(err: unknown): boolean {
   );
 }
 
-async function getJson<T>(url: string, attempts = 3): Promise<T> {
+async function getJson<T>(url: string, attempts = 3, token?: string): Promise<T> {
   let lastErr: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: authHeaders(token, { Accept: "application/json" }),
+      });
       if (!res.ok) {
         const err = new Error(`${url} → ${res.status}`);
+        if (res.status === 401) throw err;
         if (res.status >= 500 && i < attempts - 1) {
           lastErr = err;
           await sleep(80 * (i + 1));
@@ -88,6 +103,7 @@ async function postActionHttp(
   sessionId: string,
   action: RenderAction,
   actionId?: string,
+  token?: string,
 ): Promise<void> {
   const body = JSON.stringify({
     actionId: actionId ?? makeActionId(),
@@ -102,7 +118,10 @@ async function postActionHttp(
   });
   await fetch(apiUrl(baseUrl, "/api/action"), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: authHeaders(token, {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    }),
     body,
     cache: "no-store",
   });
@@ -133,7 +152,7 @@ export function createHttpEventPump(options: HttpPumpOptions = {}) {
       if (wireActions && "onAction" in surface) {
         surface.onAction(async (action: RenderAction, sessionId: string) => {
           try {
-            await postActionHttp(options.baseUrl, sessionId, action);
+            await postActionHttp(options.baseUrl, sessionId, action, undefined, options.token);
           } catch {
             /* PoC：失败由宿主日志处理 */
           }
@@ -150,7 +169,7 @@ export function createHttpEventPump(options: HttpPumpOptions = {}) {
               revision: number | null;
               updatedAt?: string;
             } | null;
-          }>(apiUrl(options.baseUrl, "/api/current"));
+          }>(apiUrl(options.baseUrl, "/api/current"), 3, options.token);
 
           failCount = 0;
           delayMs = pollMs;
@@ -201,6 +220,8 @@ export function createHttpEventPump(options: HttpPumpOptions = {}) {
                   options.baseUrl,
                   `/api/snapshot/${encodeURIComponent(sid)}`,
                 ),
+                3,
+                options.token,
               );
               const s = snap.snapshot;
               if (s && typeof s.revision === "number" && s.revision !== lastRevision) {
@@ -230,6 +251,8 @@ export function createHttpEventPump(options: HttpPumpOptions = {}) {
                 options.baseUrl,
                 `/api/events/${encodeURIComponent(sid)}?since=${eventsOffset}`,
               ),
+              3,
+              options.token,
             );
             for (const line of ev.lines) {
               options.onEvent?.(line);
@@ -277,7 +300,7 @@ export function createHttpEventPump(options: HttpPumpOptions = {}) {
     /** 便捷：同时挂 HostSurface.dispatchAction → HTTP */
     attachActionBridge(surface: HostSurface): void {
       surface.onAction(async (action, sessionId) => {
-        await postActionHttp(options.baseUrl, sessionId, action);
+        await postActionHttp(options.baseUrl, sessionId, action, undefined, options.token);
       });
     },
   };

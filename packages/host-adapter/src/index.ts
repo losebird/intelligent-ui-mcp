@@ -3,7 +3,7 @@
  *
  * 选项 A：宿主嵌 renderer 的最小 SDK。
  * - IntelligentUiHostSurface：mount / applyEvent / onAction / unmount
- * - interim 泵：HTTP（Host 窗）/ NDJSON（Node 注入）
+ * - interim 泵：SSE（优先）/ HTTP 轮询回退 / NDJSON（Node 注入）
  * - 产品气泡通道：类型占位，宿主自有（非本包实现）
  */
 
@@ -32,7 +32,17 @@ export { applyOps, collectNodes, type UiOp, type ApplyOpsResult } from "./applyO
 
 export { createHttpEventPump } from "./pump/httpPump.js";
 export { createNdjsonEventPump } from "./pump/ndjsonPump.js";
-export type { HttpPumpOptions, NdjsonPumpOptions, HttpPumpCurrentInfo } from "./pump/types.js";
+export {
+  createSseEventPump,
+  createHostEventPump,
+} from "./pump/ssePump.js";
+export type {
+  HttpPumpOptions,
+  NdjsonPumpOptions,
+  HttpPumpCurrentInfo,
+  SsePumpOptions,
+  HostPumpTransport,
+} from "./pump/types.js";
 
 /**
  * 产品气泡通道 stub：提醒宿主实现等价 HostEventPump。
@@ -44,7 +54,7 @@ export function createProductBubbleChannelStub(): import("./types.js").ProductBu
     start() {
       throw new Error(
         "[host-adapter] ProductBubbleChannel 由宿主产品实现（Cursor/Grok IPC/SSE）。" +
-          "PoC 请用 createHttpEventPump 或 createNdjsonEventPump。见 docs/HOST-ADAPTER-M0-CHECKLIST.md",
+          "PoC 请用 createHostEventPump（SSE）/ createHttpEventPump / createNdjsonEventPump。见 docs/HOST-ADAPTER-M0-CHECKLIST.md",
       );
     },
   };

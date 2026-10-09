@@ -386,3 +386,18 @@ body:has(.host-shell-embed) {
 .host-embed-foot {
   display: none;
 }
+
+/* Custom package iframe sandbox */
+.iui-sandbox-slot {
+  width: 100%;
+  min-height: 48px;
+}
+.iui-sandbox-error {
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--host-error);
+  font-size: 12px;
+}

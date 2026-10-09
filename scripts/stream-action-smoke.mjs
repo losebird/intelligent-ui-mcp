@@ -6,6 +6,7 @@
  * 3) write actions.ndjson → drain → pending/action event
  * 4) G6: state.set tip → patch Label
  * 5) streaming_chunks simplified parse on chunkDone
+ * 6) Host SSE /api/stream sees MCP-written events
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -13,6 +14,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomBytes } from "node:crypto";
+import { startSessionApiServer } from "../apps/host-window/server/sessionApi.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -371,6 +374,59 @@ async function main() {
   );
   assert(st2.tree?.children?.[0]?.props?.text === "from chunks", "chunk tree missing");
   console.log("phase4 OK: streaming_chunks parse on chunkDone");
+
+
+  // --- phase5: Host SSE receives MCP-written session events ---
+  const hostToken = `stream_sse_${randomBytes(8).toString("hex")}`;
+  const api = await startSessionApiServer({ sessionDir, port: 0, hostToken });
+  try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 5000);
+    const res = await fetch(`http://127.0.0.1:${api.port}/api/stream?sessionId=${encodeURIComponent(sessionId)}`, {
+      headers: {
+        Authorization: `Bearer ${hostToken}`,
+        "X-IUI-Host-Token": hostToken,
+        Accept: "text/event-stream",
+      },
+      signal: ac.signal,
+    });
+    assert(res.ok, `SSE status ${res.status}`);
+    assert(String(res.headers.get("content-type") || "").includes("text/event-stream"), "SSE content-type");
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let sawUi = false;
+    let sawSnap = false;
+    let sawReady = false;
+    while (!(sawUi && sawSnap && sawReady)) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let sep;
+      while ((sep = buf.indexOf("\n\n")) >= 0) {
+        const frame = buf.slice(0, sep);
+        buf = buf.slice(sep + 2);
+        let event = "message";
+        const dataLines = [];
+        for (const line of frame.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
+        }
+        if (!dataLines.length) continue;
+        if (event === "ready") sawReady = true;
+        if (event === "snapshot") sawSnap = true;
+        if (event === "ui") sawUi = true;
+        if (sawUi && sawSnap && sawReady) break;
+      }
+    }
+    clearTimeout(timer);
+    ac.abort();
+    try { await reader.cancel(); } catch { /* ignore */ }
+    assert(sawReady && sawSnap && sawUi, `SSE frames incomplete ready=${sawReady} snap=${sawSnap} ui=${sawUi}`);
+    console.log("phase5 OK: Host SSE stream sees MCP session");
+  } finally {
+    await api.close();
+  }
 
   // closed write should fail
   await client.callTool({

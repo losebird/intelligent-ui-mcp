@@ -17,6 +17,8 @@ export interface HttpPumpCurrentInfo {
 export interface HttpPumpOptions {
   /** Host 窗 origin，如 http://127.0.0.1:5173；空则用相对 /api */
   baseUrl?: string;
+  /** Host API shared secret (IUI_HOST_TOKEN); sent as Bearer + X-IUI-Host-Token */
+  token?: string;
   /** 轮询间隔 ms，默认 150（与 host-window 对齐） */
   pollMs?: number;
   /** 固定 session；省略则跟 /api/current */
@@ -62,4 +64,26 @@ export interface NdjsonPumpOptions {
   } | null>;
   sessionId: string;
   pollMs?: number;
+}
+
+/** Transport reported by createHostEventPump / createSseEventPump */
+export type HostPumpTransport =
+  | "sse"
+  | "sse_reconnect"
+  | "poll"
+  | "poll_fallback";
+
+export interface SsePumpOptions extends HttpPumpOptions {
+  /** SSE path, default `/api/stream` */
+  ssePath?: string;
+  /** Initial events NDJSON offset (passed as ?since=) */
+  eventsSince?: number;
+  /** Prefer SSE then fall back to poll (createHostEventPump). Default true. */
+  preferSse?: boolean;
+  /** Consecutive SSE failures before falling back to poll. Default 3. */
+  sseFallbackAfter?: number;
+  /** createSseEventPump: failures before onPollError. Default stickyFails. */
+  maxReconnectsBeforeError?: number;
+  /** Fired when transport changes (sse / poll / fallback). */
+  onTransport?: (transport: HostPumpTransport) => void;
 }

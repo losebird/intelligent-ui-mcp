@@ -59,6 +59,7 @@ npm run build -w @intelligent-ui/host-adapter
 | 项 | 状态 | 说明 |
 |----|------|------|
 | `createIntelligentUiHostSurface` | ✅ | App 内单例 surface |
+| `createHostEventPump` / `createSseEventPump` | ✅ | SSE `/api/stream` 优先，回退 HTTP 轮询 |
 | `createHttpEventPump` | ✅ | 跟 `/api/current|snapshot|events`；chrome 经 `onCurrent` / `onEvent` / sticky `onPollError` |
 | `HostSurfaceView` | ✅ | 主画布；action 经 `surface.onAction` → `POST /api/action` |
 | Host API / `sessionApi.mjs` | ✅ 未改 | 仍为真相旁路 HTTP |

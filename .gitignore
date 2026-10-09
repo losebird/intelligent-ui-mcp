@@ -1,5 +1,8 @@
 node_modules/
-dist/
+# Package/app build outputs (keep example custom-package entries tracked)
+packages/*/dist/
+apps/*/dist/
+evals/results/latest.json
 *.tsbuildinfo
 .DS_Store
 *.log
@@ -11,4 +14,3 @@ logs/
 coverage/
 .turbo
 .vite
-

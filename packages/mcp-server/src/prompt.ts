@@ -1,7 +1,7 @@
 import type { CatalogRegistry } from "./catalog/registry.js";
 
 /** Versioned prompt rules for design judgment (G1 Phase A). Not OpenAI RL weights. */
-export const PROMPT_FRAGMENT_VERSION = "0.2.0-ops-default";
+export const PROMPT_FRAGMENT_VERSION = "0.3.0-hf-templates";
 
 export function buildPromptFragment(
   catalog: CatalogRegistry,
@@ -56,11 +56,13 @@ export function buildPromptFragment(
   );
   lines.push("");
   lines.push(zh ? "## 组件启发式" : "## Component heuristics");
-  lines.push("- 表格数据 / 对比列 → `catalog.shadcn/DataTable`（或 Card+表，勿空壳）；columns 用 `{id,header}`（也认 `{key,label}`）");
+  lines.push("- 表格数据 / 对比列 → 优先 `catalog.shadcn/Comparison`（手机/商品对比可点选）；也可用 `DataTable`；columns 用 `{id,header}`");
   lines.push("- 趋势 / 时序 → `LineChart`/`catalog.charts/*`（若启用）否则 `DataTable` + 说明；**Chart 必须带 data**");
   lines.push("- 二选一 → `catalog.shadcn/ButtonGroup` 或两枚 `Button`");
+  lines.push("- 计算器 / 键入运算 → `catalog.shadcn/Calculator`（本地算，勿拼一堆 Button）");
   lines.push("- 填参计算 → `Form` + `Input`/`Slider` + `Button`；衍生值可用 session `reducers` / 节点 `expr`");
-  lines.push("- 分步说明 → `Accordion` 或分步 Card +「下一步」Button");
+  lines.push("- 分步流程 → `catalog.shadcn/Stepper`；待办勾选 → `catalog.shadcn/Checklist`");
+  lines.push("- 地点/标记示意 → `catalog.shadcn/MapStub`；轻量对战小游戏 → `catalog.shadcn/GameShell`");
   lines.push("- 警告确认 → `Callout` / `AlertDialog`");
   lines.push("");
   lines.push("## Protocol rules");
@@ -206,8 +208,8 @@ export function buildPromptFragment(
     lines.push("```");
     lines.push(
       zh
-        ? "然后对 `phone_table` 多次 `patch_props` 追加 rows（每次 `chunkDone:false`），最后一次 `chunkDone:true`。"
-        : "Then `patch_props` on `phone_table` to grow rows (`chunkDone:false` each time), final call `chunkDone:true`.",
+        ? "然后对 `phone_table` 多次 `patch_props` 追加 rows（每次 `chunkDone:false`），最后一次 `chunkDone:true`。或用 `catalog.shadcn/Comparison`：先壳+空 `items:[]`，再逐个 upsert item。"
+        : "Then `patch_props` on `phone_table` to grow rows (`chunkDone:false` each time), final call `chunkDone:true`. Or use `catalog.shadcn/Comparison`: shell + empty `items:[]`, then upsert items one-by-one.",
     );
     lines.push("");
     lines.push(zh ? "## 示例（允许 tree）：极小表单" : "## Example (tree OK): tiny form");

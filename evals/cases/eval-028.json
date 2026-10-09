@@ -1,0 +1,16 @@
+{
+  "id": "eval-028",
+  "locale": "zh-CN",
+  "prompt": "做一个三步开户流程，每步可前进后退",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "stepper"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Stepper"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

@@ -926,3 +926,399 @@
 .iui-root[data-iui-chrome="0"] .iui-stack-v > .iui-card:first-child:last-of-type {
   /* keep subtle border when single card is the surface */
 }
+
+/* —— High-frequency Intelligent UI templates —— */
+.iui-calc {
+  max-width: 280px;
+  border: 1px solid var(--iui-border);
+  border-radius: var(--iui-radius, 16px);
+  background: var(--iui-surface, #fff);
+  padding: 12px;
+  box-shadow: var(--iui-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+.iui-calc-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--iui-fg);
+}
+.iui-calc-screen {
+  background: var(--iui-bg, #f6f6f6);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  text-align: right;
+  min-height: 56px;
+}
+.iui-calc-expr {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--iui-fg);
+  word-break: break-all;
+}
+.iui-calc-result {
+  font-size: 12px;
+  color: var(--iui-muted);
+  margin-top: 4px;
+}
+.iui-calc-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.iui-calc-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.iui-calc-key {
+  appearance: none;
+  border: 1px solid var(--iui-border);
+  background: var(--iui-bg, #fafafa);
+  border-radius: 10px;
+  height: 40px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--iui-fg);
+}
+.iui-calc-key:hover {
+  background: var(--iui-surface-hover, #f0f0f0);
+}
+.iui-calc-key:active {
+  transform: scale(0.97);
+}
+.iui-calc-key-wide {
+  grid-column: span 2;
+}
+.iui-calc-key-op {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.iui-calc-key-op:hover {
+  background: #333;
+}
+.iui-calc-key-fn {
+  color: var(--iui-muted);
+}
+
+.iui-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.iui-compare-title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--iui-fg);
+}
+.iui-compare-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.iui-compare-card {
+  border: 1px solid var(--iui-border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--iui-surface, #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.iui-compare-card-hot {
+  border-color: #111;
+  box-shadow: 0 0 0 1px #111;
+}
+.iui-compare-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+.iui-compare-name {
+  font-weight: 650;
+  font-size: 15px;
+}
+.iui-compare-sub {
+  font-size: 12px;
+  color: var(--iui-muted);
+  margin-top: 2px;
+}
+.iui-compare-specs {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.iui-compare-specs > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.iui-compare-specs dt {
+  color: var(--iui-muted);
+  margin: 0;
+}
+.iui-compare-specs dd {
+  margin: 0;
+  font-weight: 550;
+  text-align: right;
+}
+.iui-compare-table th.iui-compare-hot {
+  background: var(--iui-bg);
+}
+.iui-compare-table .iui-badge {
+  margin-left: 6px;
+}
+
+.iui-stepper {
+  border: 1px solid var(--iui-border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--iui-surface, #fff);
+}
+.iui-stepper-title {
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.iui-stepper-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.iui-stepper-vertical .iui-stepper-list {
+  flex-direction: column;
+}
+.iui-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  min-width: 120px;
+  opacity: 0.55;
+}
+.iui-step-active,
+.iui-step-done {
+  opacity: 1;
+}
+.iui-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--iui-border);
+  background: var(--iui-bg);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.iui-step-active .iui-step-dot {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.iui-step-done .iui-step-dot {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}
+.iui-step-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.iui-step-desc {
+  font-size: 12px;
+  color: var(--iui-muted);
+}
+.iui-stepper-body {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--iui-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.iui-stepper-current p {
+  margin: 6px 0 0;
+  color: var(--iui-muted);
+  font-size: 13px;
+}
+.iui-stepper-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.iui-checklist {
+  border: 1px solid var(--iui-border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--iui-surface, #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.iui-checklist-title {
+  font-weight: 650;
+}
+.iui-checklist-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--iui-muted);
+}
+.iui-checklist-progress .iui-progress {
+  flex: 1;
+}
+.iui-checklist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.iui-checklist-list li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--iui-bg, #fafafa);
+}
+.iui-check-done {
+  opacity: 0.72;
+}
+.iui-check-done strong {
+  text-decoration: line-through;
+}
+.iui-check-desc {
+  font-size: 12px;
+  color: var(--iui-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.iui-checklist-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.iui-map {
+  border: 1px solid var(--iui-border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--iui-surface, #fff);
+}
+.iui-map-title {
+  font-weight: 650;
+  padding: 12px 14px 0;
+}
+.iui-map-canvas {
+  position: relative;
+  height: 200px;
+  margin: 12px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #dbeafe 0%, #ecfdf5 55%, #fef3c7 100%);
+  overflow: hidden;
+}
+.iui-map-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.iui-map-meta {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-size: 11px;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.iui-map-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.iui-map-pin span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #111;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.iui-map-pin em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1px 6px;
+  border-radius: 6px;
+  color: #111;
+}
+.iui-map-caption {
+  padding: 0 14px 12px;
+  font-size: 12px;
+  color: var(--iui-muted);
+}
+
+.iui-game {
+  border: 1px solid var(--iui-border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--iui-surface, #fff);
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.iui-game-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.iui-game-title {
+  font-weight: 650;
+}
+.iui-game-status {
+  font-size: 12px;
+  color: var(--iui-muted);
+}
+.iui-game-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.iui-game-cell {
+  aspect-ratio: 1;
+  border: 1px solid var(--iui-border);
+  border-radius: 10px;
+  background: var(--iui-bg, #fafafa);
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--iui-fg);
+}
+.iui-game-cell:disabled {
+  cursor: default;
+  opacity: 0.9;
+}

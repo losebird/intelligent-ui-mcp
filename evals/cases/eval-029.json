@@ -1,0 +1,16 @@
+{
+  "id": "eval-029",
+  "locale": "zh-CN",
+  "prompt": "列一个上线 checklist，可以勾选",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "checklist"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Checklist"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

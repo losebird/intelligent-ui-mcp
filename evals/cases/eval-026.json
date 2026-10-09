@@ -1,0 +1,17 @@
+{
+  "id": "eval-026",
+  "locale": "zh-CN",
+  "prompt": "给我一个可以点的计算器",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "calculator",
+      "interactive"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Calculator"
+    ],
+    "forbidTypes": [],
+    "needsAction": true
+  }
+}

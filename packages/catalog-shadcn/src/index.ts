@@ -311,6 +311,190 @@ const components: ComponentDef[] = [
     },
     required: ["items"],
   }),
+  def(
+    "Calculator",
+    "Self-contained calculator keypad (local compute + actions)",
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        expression: { type: "string", description: "Initial expression / display" },
+        result: { type: "string", description: "Initial result string" },
+        title: { type: "string" },
+      },
+    },
+    { actions: ["press", "equals", "clear"] },
+  ),
+  def(
+    "Comparison",
+    "Product / phone comparison cards or table with selectable winner",
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        title: { type: "string" },
+        layout: {
+          type: "string",
+          enum: ["cards", "table"],
+          default: "cards",
+        },
+        aspects: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              label: { type: "string" },
+            },
+            required: ["id", "label"],
+          },
+          description: "Rows/aspects shared across items",
+        },
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              name: { type: "string" },
+              subtitle: { type: "string" },
+              badge: { type: "string" },
+              highlight: { type: "boolean" },
+              values: { type: "object", additionalProperties: true },
+            },
+            required: ["id", "name"],
+          },
+        },
+        selectedId: { type: "string" },
+        selectLabel: { type: "string", default: "选这个" },
+      },
+      required: ["items"],
+    },
+    { actions: ["select"] },
+  ),
+  def(
+    "Stepper",
+    "Multi-step wizard with next/prev/goto",
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        title: { type: "string" },
+        orientation: {
+          type: "string",
+          enum: ["horizontal", "vertical"],
+          default: "horizontal",
+        },
+        steps: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              description: { type: "string" },
+            },
+            required: ["id", "title"],
+          },
+        },
+        current: {
+          description: "Step index (0-based) or step id",
+          oneOf: [{ type: "number" }, { type: "string" }],
+        },
+        nextLabel: { type: "string", default: "下一步" },
+        prevLabel: { type: "string", default: "上一步" },
+        completeLabel: { type: "string", default: "完成" },
+      },
+      required: ["steps"],
+    },
+    { actions: ["next", "prev", "goto", "complete"] },
+  ),
+  def(
+    "Checklist",
+    "Interactive checklist with toggle / complete",
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        title: { type: "string" },
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              label: { type: "string" },
+              description: { type: "string" },
+              checked: { type: "boolean", default: false },
+            },
+            required: ["id", "label"],
+          },
+        },
+        showProgress: { type: "boolean", default: true },
+        completeLabel: { type: "string", default: "全部完成" },
+      },
+      required: ["items"],
+    },
+    { actions: ["toggle", "check_all", "complete"] },
+  ),
+  def(
+    "MapStub",
+    "Lightweight map placeholder with markers (no tile API)",
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        title: { type: "string" },
+        caption: { type: "string" },
+        center: {
+          type: "object",
+          properties: {
+            lat: { type: "number" },
+            lng: { type: "number" },
+          },
+          required: ["lat", "lng"],
+        },
+        zoom: { type: "number", default: 12 },
+        markers: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              lat: { type: "number" },
+              lng: { type: "number" },
+              label: { type: "string" },
+            },
+            required: ["id", "lat", "lng"],
+          },
+        },
+      },
+    },
+    { actions: ["marker_click"] },
+  ),
+  def(
+    "GameShell",
+    "Simple interactive game shell (tic-tac-toe)",
+    {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        title: { type: "string", default: "井字棋" },
+        kind: {
+          type: "string",
+          enum: ["tictactoe"],
+          default: "tictactoe",
+        },
+        board: {
+          type: "array",
+          items: { type: ["string", "null"] },
+          description: "9 cells: X / O / null",
+        },
+        status: { type: "string" },
+      },
+    },
+    { actions: ["move", "reset", "win"] },
+  ),
 ];
 
 export const catalogShadcn: PackageManifest = {

@@ -247,3 +247,11 @@
 ## 与其它 catalog 的占位
 
 `catalog.radix|mui|antd|chakra|charts` 在 ⑥ 前：`renderStatus: "schema_only"`；清单另文，不在本文件展开。
+
+
+---
+
+## 高频模板（见 [`HF-TEMPLATES.md`](./HF-TEMPLATES.md)）
+
+`catalog.shadcn` 另含：`Calculator`、`Comparison`、`Stepper`、`Checklist`、`MapStub`、`GameShell`。  
+props / actions / ops 流式示例以 HF-TEMPLATES 为准。

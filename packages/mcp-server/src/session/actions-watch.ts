@@ -85,10 +85,30 @@ export class ActionsFileWatcher {
       this.buffer = this.buffer.slice(nl + 1);
       if (!raw) continue;
       try {
-        const obj = JSON.parse(raw) as HostActionLine;
-        if (obj && typeof obj.actionId === "string" && obj.action) {
-          lines.push(obj);
+        const obj = JSON.parse(raw) as Record<string, unknown>;
+        if (!obj || typeof obj.actionId !== "string") continue;
+        // Host POST /api/action writes flat {actionId,type,nodeId,...};
+        // older smoke / bypass used nested {actionId, action:{...}}.
+        let action = obj.action as Record<string, unknown> | undefined;
+        if (!action || typeof action !== "object") {
+          if (typeof obj.type === "string") {
+            action = {
+              type: obj.type,
+              nodeId: obj.nodeId ?? null,
+              componentType: obj.componentType ?? null,
+              value: obj.value,
+              path: obj.path,
+              payload: obj.payload ?? {},
+            };
+          }
         }
+        if (!action) continue;
+        lines.push({
+          actionId: obj.actionId,
+          action,
+          ts: typeof obj.ts === "string" ? obj.ts : undefined,
+          sessionId: typeof obj.sessionId === "string" ? obj.sessionId : undefined,
+        });
       } catch {
         // skip bad line
       }

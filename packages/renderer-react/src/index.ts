@@ -8,6 +8,11 @@ export {
   SCHEMA_ONLY_ALIASES,
   resolveAlias,
   adaptAliasedProps,
+  NodeMotionShell,
+  SkeletonPlaceholder,
+  prefersReducedMotion,
+  subscribePrefersReducedMotion,
+  resetPrefersReducedMotionCache,
 } from "./UiRenderer.js";
 export {
   normalizeRenderAction,

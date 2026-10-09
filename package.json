@@ -2,7 +2,7 @@
   "name": "intelligent-ui-mcp",
   "version": "0.1.0",
   "private": true,
-  "description": "Intelligent UI MCP — OpenAI Intelligent UI–aligned generative UI over stdio MCP",
+  "description": "Intelligent UI MCP \u2014 OpenAI Intelligent UI\u2013aligned generative UI over stdio MCP",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -24,7 +24,9 @@
     "stream-phone-compare": "node scripts/stream-phone-compare.mjs",
     "sandbox-smoke": "node scripts/sandbox-smoke.mjs",
     "templates-smoke": "node scripts/templates-smoke.mjs",
-    "iframe-action-smoke": "node scripts/iframe-action-smoke.mjs"
+    "iframe-action-smoke": "node scripts/iframe-action-smoke.mjs",
+    "motion-smoke": "node scripts/motion-smoke.mjs",
+    "motion-capture": "node scripts/motion-capture.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"

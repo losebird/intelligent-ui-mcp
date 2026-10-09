@@ -257,6 +257,7 @@ npm run eval            # → evals/results/latest.md
 
 ## ③ 已知简化
 
+- **轻量 Motion（P1）**：ops 上屏节点渐入 + skeleton shimmer + `prefers-reduced-motion`；**不 remount**；**不冒充** Claude Dashboards/Motion。见 [`docs/LIGHTWEIGHT-MOTION.md`](./docs/LIGHTWEIGHT-MOTION.md)。
 - **边输出边画（P0）**：对比类必须 `mode=ops` 分片；`chunkDone` 省略/false → session `streaming`+`partial`，Host 已上屏；仅 `chunkDone:true` 完结。见 [`docs/AUDIT-P0-OPS-DEFAULT.md`](./docs/AUDIT-P0-OPS-DEFAULT.md)。
 - `streaming_chunks`：**JSONL 行**在到达时即 apply（不必等 `chunkDone`）；非 JSONL 缓冲仍在 `chunkDone=true` 时整段 JSON.parse（树 / `{tree}` / `{ops}`）。不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
 - `refresh`：可选字段；若传入仅记 warnings 别名，ops 照常应用。
@@ -271,7 +272,7 @@ npm run eval            # → evals/results/latest.md
 
 ## CI
 
-GitHub Actions（`.github/workflows/ci.yml`）：`npm ci` → `build` → `smoke` / `host-smoke` / `stream-smoke` / `stream-phone-compare` / `custom-smoke` / `sandbox-smoke` / `eval:validate`。CI 注入 `IUI_HOST_TOKEN`。
+GitHub Actions（`.github/workflows/ci.yml`）：`npm ci` → `build` → `smoke` / `host-smoke` / `stream-smoke` / `stream-phone-compare` / `custom-smoke` / `sandbox-smoke` / `iframe-action-smoke` / `motion-smoke` / `eval:validate`。CI 注入 `IUI_HOST_TOKEN`。
 
 ## License
 

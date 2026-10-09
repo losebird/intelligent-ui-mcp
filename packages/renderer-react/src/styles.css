@@ -1322,3 +1322,198 @@
   cursor: default;
   opacity: 0.9;
 }
+
+/* ═══════════════════════════════════════════════════════════
+ * Lightweight Motion (ops progressive paint)
+ * NOT Claude Artifacts Dashboards / Motion — CSS enter + shimmer only.
+ * Keys stay node.id → no remount on patch_props.
+ * ═══════════════════════════════════════════════════════════ */
+
+.iui-node-shell {
+  /* layout settle without remounting children */
+  will-change: opacity, transform;
+}
+
+.iui-motion-on .iui-stack,
+.iui-motion-on .iui-grid {
+  transition: gap 200ms ease;
+}
+
+.iui-motion-on .iui-card,
+.iui-motion-on .iui-table-wrap,
+.iui-motion-on .iui-comparison,
+.iui-motion-on .iui-chart {
+  transition:
+    box-shadow 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+/* Enter: fade + slight rise — once per node mount */
+.iui-motion-on .iui-node-shell[data-iui-motion="enter"] {
+  animation: iui-node-enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--iui-enter-delay, 0ms);
+}
+
+@keyframes iui-node-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iui-node-shell[data-iui-motion="done"],
+.iui-node-shell[data-iui-motion="skipped"],
+.iui-node-shell[data-iui-motion="off"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Skeleton / shimmer placeholders */
+.iui-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--iui-radius-md);
+  margin-top: 10px;
+}
+
+.iui-skeleton-block {
+  padding: 14px 16px;
+  background: var(--iui-surface);
+  border: 1px solid var(--iui-border);
+}
+
+.iui-skeleton-label {
+  font-size: 12px;
+  color: var(--iui-muted);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.iui-skeleton-row {
+  height: 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--iui-surface-2);
+}
+
+.iui-skeleton-row:last-child {
+  margin-bottom: 0;
+}
+
+.iui-skeleton-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--iui-surface-2) 0%,
+    rgba(255, 255, 255, 0.85) 45%,
+    var(--iui-surface-2) 90%
+  );
+  background-size: 200% 100%;
+  animation: iui-shimmer-slide 1.35s ease-in-out infinite;
+}
+
+.iui-skeleton-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0 2px;
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+}
+
+.iui-skeleton-bar-sm,
+.iui-skeleton-bar-md {
+  display: inline-block;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--iui-surface-2) 0%,
+    rgba(255, 255, 255, 0.9) 50%,
+    var(--iui-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: iui-shimmer-slide 1.35s ease-in-out infinite;
+}
+
+.iui-skeleton-bar-sm {
+  width: 28%;
+}
+.iui-skeleton-bar-md {
+  width: 42%;
+  animation-delay: 0.15s;
+}
+
+@keyframes iui-shimmer-slide {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Existing stream shimmer banner — keep, align timing */
+.iui-stream-shimmer::after {
+  animation-duration: 1.35s;
+}
+
+/* prefers-reduced-motion: hard kill enter + shimmer */
+@media (prefers-reduced-motion: reduce) {
+  .iui-motion-on .iui-node-shell[data-iui-motion="enter"],
+  .iui-node-shell[data-iui-motion="enter"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .iui-skeleton-bar,
+  .iui-skeleton-bar-sm,
+  .iui-skeleton-bar-md,
+  .iui-stream-shimmer::after {
+    animation: none !important;
+  }
+
+  .iui-motion-on .iui-stack,
+  .iui-motion-on .iui-grid,
+  .iui-motion-on .iui-card,
+  .iui-motion-on .iui-table-wrap,
+  .iui-motion-on .iui-comparison,
+  .iui-motion-on .iui-chart {
+    transition: none !important;
+  }
+
+  .iui-skeleton-bar,
+  .iui-skeleton-bar-sm,
+  .iui-skeleton-bar-md {
+    background: var(--iui-surface-2);
+  }
+}
+
+.iui-motion-off .iui-node-shell[data-iui-motion="enter"],
+.iui-root[data-iui-reduced-motion="1"] .iui-node-shell[data-iui-motion="enter"] {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.iui-motion-off .iui-skeleton-bar,
+.iui-motion-off .iui-skeleton-bar-sm,
+.iui-motion-off .iui-skeleton-bar-md,
+.iui-root[data-iui-reduced-motion="1"] .iui-skeleton-bar,
+.iui-root[data-iui-reduced-motion="1"] .iui-skeleton-bar-sm,
+.iui-root[data-iui-reduced-motion="1"] .iui-skeleton-bar-md,
+.iui-motion-off .iui-stream-shimmer::after,
+.iui-root[data-iui-reduced-motion="1"] .iui-stream-shimmer::after {
+  animation: none !important;
+}

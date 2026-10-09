@@ -55,5 +55,8 @@ jobs:
       - name: Iframe action + data/render smoke
         run: npm run iframe-action-smoke
 
+      - name: Lightweight motion smoke
+        run: npm run motion-smoke
+
       - name: Eval cases validate
         run: npm run eval:validate

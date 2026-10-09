@@ -10,6 +10,7 @@ import type { RenderAction } from "@intelligent-ui/renderer-react";
 import {
   fetchConfig,
   postAction,
+  resolveClientHostToken,
   type CurrentPointer,
 } from "./api";
 import { useCustomPackages } from "./useCustomPackages";
@@ -107,6 +108,7 @@ export function App() {
       pollMs: 150,
       syncSnapshot: true,
       wireActions: false,
+      token: resolveClientHostToken(),
       sessionId: mode.pinnedSessionId,
       stickyFails: 3,
       backoffMaxMs: 2000,

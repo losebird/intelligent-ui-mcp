@@ -32,6 +32,7 @@ surface.onAction((action, sessionId) => {
 // Interim：跟 apps/host-window 同一套 /api/*
 const stop = createHttpEventPump({
   baseUrl: "http://127.0.0.1:5173",
+  token: process.env.IUI_HOST_TOKEN, // same secret as Host / MCP
   wireActions: true,
 }).start(surface);
 

@@ -8,8 +8,10 @@ import {
   createSessionMiddleware,
   resolveSessionDir,
 } from "./server/sessionApi.mjs";
+import { ensureHostToken, isAllowedCorsOrigin } from "./server/hostAuth.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const hostToken = ensureHostToken();
 const sessionDir = resolveSessionDir();
 const repoRoot = path.resolve(__dirname, "../..");
 const homeIui = path.join(os.homedir(), ".intelligent-ui-mcp");
@@ -35,7 +37,9 @@ function installEmbedHeaders(server: MwServer) {
 }
 
 function installSessionApi(server: MwServer) {
-  const mw = createSessionMiddleware(sessionDir) as Connect.NextHandleFunction;
+  const mw = createSessionMiddleware(sessionDir, {
+    hostToken,
+  }) as Connect.NextHandleFunction;
   // Register during configureServer (before Vite internals) so /api/* never
   // falls through to SPA / transform.
   server.middlewares.use(mw);
@@ -74,6 +78,10 @@ export default defineConfig({
       },
     },
   ],
+  define: {
+    // Inject shared Host API token into the same-origin client bundle.
+    "import.meta.env.IUI_HOST_TOKEN": JSON.stringify(hostToken),
+  },
   resolve: {
     alias: {
       "@intelligent-ui/renderer-react/styles.css": path.resolve(
@@ -98,8 +106,13 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
-    // Helpful when agent browsers rewrite Origin (localhost vs 127.0.0.1).
-    cors: true,
+    // Loopback origins only (localhost ↔ 127.0.0.1); no arbitrary reflect.
+    cors: {
+      origin(origin, cb) {
+        if (!origin || isAllowedCorsOrigin(origin)) cb(null, true);
+        else cb(null, false);
+      },
+    },
     fs: { allow: fsAllow },
     // Avoid full-page death on brief WS blips; API still retries on client.
     hmr: { host: "127.0.0.1", port: 5173 },

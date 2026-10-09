@@ -32,6 +32,31 @@ function apiUrl(path: string): string {
   return path;
 }
 
+/** Shared Host API token (Vite injects import.meta.env.IUI_HOST_TOKEN). */
+export function resolveClientHostToken(): string {
+  const fromEnv =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as ImportMeta & { env?: Record<string, string> }).env
+        ?.IUI_HOST_TOKEN) ||
+    "";
+  if (fromEnv && String(fromEnv).trim()) return String(fromEnv).trim();
+  if (typeof window !== "undefined") {
+    const q = new URLSearchParams(window.location.search).get("token");
+    if (q?.trim()) return q.trim();
+  }
+  return "";
+}
+
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...(extra ?? {}) };
+  const token = resolveClientHostToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+    headers["X-IUI-Host-Token"] = token;
+  }
+  return headers;
+}
+
 async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
@@ -56,9 +81,13 @@ async function getJson<T>(url: string, attempts = 3): Promise<T> {
   let lastErr: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
-      const res = await fetch(apiUrl(url), { cache: "no-store" });
+      const res = await fetch(apiUrl(url), {
+        cache: "no-store",
+        headers: authHeaders({ Accept: "application/json" }),
+      });
       if (!res.ok) {
         const err = new Error(`${url} → ${res.status}`);
+        if (res.status === 401) throw err;
         if (res.status >= 500 && i < attempts - 1) {
           lastErr = err;
           await sleep(80 * (i + 1));
@@ -128,7 +157,10 @@ export async function postAction(
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: authHeaders({
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        }),
         body,
         cache: "no-store",
       });

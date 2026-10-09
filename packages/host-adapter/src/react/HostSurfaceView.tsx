@@ -24,6 +24,8 @@ export interface HostSurfaceViewProps {
   /** 错误条；默认显示 lastError */
   showErrorChrome?: boolean;
   emptyPlaceholder?: ReactNode;
+  /** Bubble/bare chrome flag forwarded to UiRenderer */
+  chromeMode?: string;
 }
 
 function useMirror(surface: HostSurface, sessionId: string): SessionMirror | null {
@@ -48,6 +50,7 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
     showStreamingChrome = true,
     showErrorChrome = true,
     emptyPlaceholder,
+    chromeMode,
   } = props;
 
   const mirror = useMirror(surface, sessionId);
@@ -61,7 +64,7 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
 
   const effectiveDensity = density ?? mirror?.density ?? "full";
 
-  const chrome = useMemo(() => {
+  const chromeBars = useMemo(() => {
     if (!mirror) return null;
     return (
       <>
@@ -74,7 +77,7 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
               marginBottom: 8,
               padding: "4px 8px",
               borderRadius: 6,
-              background: "rgba(59,130,246,0.12)",
+              background: "rgba(13,13,13,0.04)",
             }}
           >
             生成中… rev={mirror.revision}
@@ -114,7 +117,7 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
   if (!mirror.tree) {
     return (
       <div className={className} data-iui-host-slot={sessionId} data-iui-rev={mirror.revision}>
-        {chrome}
+        {chromeBars}
         {emptyPlaceholder ?? (
           <div style={{ opacity: 0.6, fontSize: 13 }}>等待 ui_propose…</div>
         )}
@@ -124,13 +127,14 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
 
   return (
     <div className={className} data-iui-host-slot={sessionId} data-iui-rev={mirror.revision}>
-      {chrome}
+      {chromeBars}
       <UiRenderer
         tree={mirror.tree}
         state={mirror.state}
         density={effectiveDensity}
         extraRenderers={extraRenderers}
         onAction={onAction}
+        chrome={chromeMode}
       />
     </div>
   );

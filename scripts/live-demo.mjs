@@ -98,39 +98,39 @@ async function main() {
         id: "title",
         type: "catalog.base/Markdown",
         props: {
-          text: "## Intelligent UI 演示\n真 MCP stdio `ui_propose` 写出 · 小费计算器 + 折线图",
+          text: "## Your tip split\nAdjust the bill, tip, and party size — totals update live.",
         },
       },
       {
         id: "card",
         type: "catalog.shadcn/Card",
         props: {
-          title: "小费计算器",
-          description: "调整账单、小费比例与人数，预览人均分摊。",
+          title: "Tip calculator",
+          description: "Interactive preview — same density as ChatGPT inline cards.",
         },
         children: [
           {
             id: "bill",
             type: "catalog.shadcn/Input",
-            props: { label: "账单金额（¥）", value: "120", inputType: "number" },
+            props: { label: "Bill (¥)", value: "120", inputType: "number" },
             bind: "bill",
           },
           {
             id: "tip",
             type: "catalog.shadcn/Slider",
-            props: { label: "小费比例 %", min: 0, max: 30, step: 1, value: 15 },
+            props: { label: "Tip %", min: 0, max: 30, step: 1, value: 15 },
             bind: "tipPercent",
           },
           {
             id: "people",
             type: "catalog.shadcn/Input",
-            props: { label: "用餐人数", value: "3", inputType: "number" },
+            props: { label: "Guests", value: "3", inputType: "number" },
             bind: "people",
           },
           {
             id: "total",
             type: "catalog.shadcn/Badge",
-            props: { text: "人均约 ¥46.00（含小费）", variant: "default" },
+            props: { text: "~¥46.00 / person incl. tip", variant: "default" },
           },
           {
             id: "actions",
@@ -140,7 +140,7 @@ async function main() {
               {
                 id: "yes",
                 type: "catalog.shadcn/Button",
-                props: { label: "满意", variant: "default" },
+                props: { label: "Looks good", variant: "default" },
                 actions: {
                   onClick: {
                     actionType: "submit",
@@ -151,7 +151,7 @@ async function main() {
               {
                 id: "go",
                 type: "catalog.shadcn/Button",
-                props: { label: "重新计算", variant: "outline" },
+                props: { label: "Recalculate", variant: "secondary" },
                 actions: {
                   onClick: {
                     actionType: "click",
@@ -167,7 +167,7 @@ async function main() {
         id: "chart",
         type: "catalog.charts/LineChart",
         props: {
-          title: "Q1–Q4 营收示意",
+          title: "Revenue · Q1–Q4",
           height: 220,
           data: [
             { x: "Q1", y: 42 },

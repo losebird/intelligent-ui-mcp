@@ -30,6 +30,8 @@
 | `CATALOG-BASE-SHADCN.md` | G5 / ① | base + shadcn 控件 |
 | `HF-TEMPLATES.md` | 演示题差距 | Calculator/Comparison/Stepper 等高频模板 |
 | `DATA-VS-RENDER.md` | remount / 交互 | Data tool vs Render tool 约定 |
+| `LIGHTWEIGHT-MOTION.md` | 流式体感 | 轻量 Motion（非 Claude Motion）：渐入/shimmer/reduced |
+| `AUDIT-P1-LIGHTWEIGHT-MOTION.md` | P1 动效 | 落地说明 + 冒烟 |
 | `AUDIT-P1-IFRAME-ACTION.md` | Host iframe | postMessage/actions 对齐 + 冒烟 |
 | `HOST-WINDOW.md` | G2 / ② | 参考渲染窗 |
 | `CUSTOM-PACKAGE-MANIFEST.md` | G4 / ④ | 注册即渲染规范 |

@@ -474,3 +474,16 @@ body:has(.host-shell-bare) {
   color: var(--host-error);
   font-size: 12px;
 }
+
+/* Lightweight Motion — Host chrome respects reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .host-banner-stream {
+    animation: none !important;
+    background: #eff6ff;
+    background-size: auto;
+  }
+  .iui-host-streaming.iui-stream-shimmer::after,
+  .iui-stream-shimmer::after {
+    animation: none !important;
+  }
+}

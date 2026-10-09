@@ -26,6 +26,8 @@ export interface HostSurfaceViewProps {
   emptyPlaceholder?: ReactNode;
   /** Bubble/bare chrome flag forwarded to UiRenderer */
   chromeMode?: string;
+  /** Lightweight Motion (default true). Not Claude Motion. */
+  motion?: boolean;
 }
 
 function useMirror(surface: HostSurface, sessionId: string): SessionMirror | null {
@@ -51,6 +53,7 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
     showErrorChrome = true,
     emptyPlaceholder,
     chromeMode,
+    motion = true,
   } = props;
 
   const mirror = useMirror(surface, sessionId);
@@ -69,17 +72,7 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
     return (
       <>
         {showStreamingChrome && mirror.partial && mirror.status !== "done" ? (
-          <div
-            className="iui-host-streaming"
-            style={{
-              fontSize: 12,
-              opacity: 0.75,
-              marginBottom: 8,
-              padding: "4px 8px",
-              borderRadius: 6,
-              background: "rgba(13,13,13,0.04)",
-            }}
-          >
+          <div className="iui-host-streaming iui-stream-shimmer" role="status">
             生成中… rev={mirror.revision}
             {mirror.title ? ` · ${mirror.title}` : ""}
           </div>
@@ -115,11 +108,25 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
   }
 
   if (!mirror.tree) {
+    const waitingStream =
+      Boolean(mirror.partial) || mirror.status === "streaming";
     return (
       <div className={className} data-iui-host-slot={sessionId} data-iui-rev={mirror.revision}>
         {chromeBars}
-        {emptyPlaceholder ?? (
-          <div style={{ opacity: 0.6, fontSize: 13 }}>等待 ui_propose…</div>
+        {waitingStream ? (
+          <UiRenderer
+            tree={null}
+            density={effectiveDensity}
+            extraRenderers={extraRenderers}
+            onAction={onAction}
+            chrome={chromeMode}
+            motion={motion}
+            streaming
+          />
+        ) : (
+          emptyPlaceholder ?? (
+            <div style={{ opacity: 0.6, fontSize: 13 }}>等待 ui_propose…</div>
+          )
         )}
       </div>
     );
@@ -135,6 +142,8 @@ export function HostSurfaceView(props: HostSurfaceViewProps) {
         extraRenderers={extraRenderers}
         onAction={onAction}
         chrome={chromeMode}
+        motion={motion}
+        streaming={Boolean(mirror.partial) && mirror.status !== "done"}
       />
     </div>
   );

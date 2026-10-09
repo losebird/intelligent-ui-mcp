@@ -5,6 +5,7 @@
 > 对照源：OpenAI Intelligent UI 公开说明；[thesysdev/openui](https://github.com/thesysdev/openui)；[CopilotKit/OpenGenerativeUI](https://github.com/CopilotKit/OpenGenerativeUI)；本仓 `DESIGN-v0.1.md` / G3 / G2 / Host 旁路。
 
 > **P0 本机落地（2026-10-08）**：`proposeChunks` 已 JSONL 即 apply；Host 有「生成中」条 + `ui.delta` 日志；prompt 强制对比类 `mode=ops`；`npm run stream-phone-compare` 验收渐进帧（无截图）。  
+> **P1 轻量 Motion（2026-10-09）**：节点渐入 + shimmer + reduced-motion；见 [`LIGHTWEIGHT-MOTION.md`](./LIGHTWEIGHT-MOTION.md)（**非** Claude Motion）。
 > **P0 默认强化（2026-10-09）**：`ui_propose` 工具描述/推断默认走 ops；`chunkDone` 省略=partial；prompt 示例改为手机对比分片；`live-demo` 改为 ops 边画；`stream-phone-compare` 用 SSE+Host snapshot 证明分片可见。见 [`AUDIT-P0-OPS-DEFAULT.md`](./AUDIT-P0-OPS-DEFAULT.md)。
 
 > **相关决策文档**：Ace 进一步目标「任意无 Renderer harness 也要气泡内 Intelligent UI」——结论见 [`HARNESSLESS-FEASIBILITY.md`](./HARNESSLESS-FEASIBILITY.md)（MCP-only 不可达原生气泡；默认押自动薄壳 Host）。

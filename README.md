@@ -129,7 +129,7 @@ npm run eval          # heuristic format table → evals/results/latest.md
 | `list_components` | 列出控件 |
 | `set_enabled_packages` | 启停包（`catalog.base` 不可关） |
 | `set_enabled_components` | 启停单个控件 |
-| `get_prompt_fragment` | 给模型的 UI 选用说明 |
+| `get_prompt_fragment` | 完整选用说明 + 食谱（**initialize `instructions` 已注入**，不必先调、不必口头禅） |
 | `get_json_schema` | 拉 props / 树 schema |
 | `ui_open` | 开 session + 写旁路 + actions watch；**probe/自动 spawn Host + 开浏览器**；返回 `openUrl`/`hostHint`/`launchCmd` |
 | `ui_propose` | **默认演示路径 `ops` 分片**；`tree` 仅极小单次；`streaming_chunks` JSONL 即画（遗留整段仍等 chunkDone） |

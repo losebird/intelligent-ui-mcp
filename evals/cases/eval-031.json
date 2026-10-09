@@ -1,0 +1,17 @@
+{
+  "id": "eval-031",
+  "locale": "zh-CN",
+  "prompt": "今天北京天气怎么样",
+  "expect": {
+    "format": "ui",
+    "tags": ["ui", "weather-card"],
+    "anyOfTypes": [
+      "catalog.shadcn/Card",
+      "catalog.charts/LineChart",
+      "catalog.base/Stack"
+    ],
+    "forbidTypes": [],
+    "needsAction": false,
+    "notes": "自然问天气 → 天气卡 + 逐小时折线，不要纯文字"
+  }
+}

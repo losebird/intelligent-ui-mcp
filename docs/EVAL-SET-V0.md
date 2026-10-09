@@ -45,6 +45,10 @@
 | 23 | 「我要自定义仪表盘控件（无包时）」 | 纯文字说明如何 register_package | — 或 `Callout`+`CodeBlock` | plain |
 | 24 | 「同时启用 schema_only 的 antd 类型做按钮」 | UI 可降级 | 允许 `Unknown` 或映射到 shadcn Button；记 safety/fit | ui |
 | 25 | 「空会话里乱点」（无用户题，Host 空状态） | 无 UI 树 | 空状态文案 | — |
+| 30 | 「现在我的电脑内存怎么样」 | UI | `Card`+`Progress`+`Grid` 指标磁贴 | ui |
+| 31 | 「今天北京天气怎么样」 | UI | `Card`+`LineChart`（+ `BarChart`） | ui |
+| 32 | 「给我写一篇博士生的毕业论文」 | UI+状态 | `Form`+`ButtonGroup`+`Input` 采集 | ui+state |
+| 33 | 「A 方案和 B 方案比哪个好」 | UI | `Comparison` / `DataTable` | ui |
 
 ## ⑥ 已落地文件形状
 

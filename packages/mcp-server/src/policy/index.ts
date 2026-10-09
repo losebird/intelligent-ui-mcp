@@ -5,6 +5,7 @@ export {
   EVAL_HEURISTIC_CASES,
 } from "./classify.js";
 export type { ClassifyResult, FormatDecision } from "./classify.js";
+export { buildAlwaysOnInstructions, STEER_VERSION } from "../steer.js";
 export { policyCheck, isPolicyEnabled } from "./referee.js";
 export type { PolicyCheckInput, PolicyCheckOutput } from "./referee.js";
 export { lintTree } from "../lint.js";

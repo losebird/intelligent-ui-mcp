@@ -109,6 +109,51 @@ async function main() {
     if (plainOk < plainCases.length) {
       console.warn(`plain misses: ${plainOk}/${plainCases.length}`);
     }
+
+    const stayPlain = [
+      "巴黎是哪个国家的首都？",
+      "今天星期几？",
+      "列出登录表单该有的字段（只要说明）",
+      "我要自定义仪表盘控件（无包时）怎么 register_package？",
+    ];
+    for (const q of stayPlain) {
+      const r = policy.classifyFormat(q);
+      if (r.decision !== "plain_text") {
+        throw new Error(`expected plain_text for ${JSON.stringify(q)} got ${r.decision} ${r.reasons}`);
+      }
+    }
+    const mustUi = [
+      "现在我的电脑内存怎么样",
+      "今天北京天气怎么样",
+      "给我写一篇博士生的毕业论文",
+      "A 方案和 B 方案比哪个好",
+    ];
+    for (const q of mustUi) {
+      const r = policy.classifyFormat(q);
+      if (r.decision !== "ui") {
+        throw new Error(`expected ui for ${JSON.stringify(q)} got ${r.decision} ${r.reasons}`);
+      }
+    }
+    console.log("classify natural-ask overrides ok");
+
+    const steer = policy.buildAlwaysOnInstructions({ locale: "zh-CN" });
+    for (const needle of [
+      "ui_open",
+      "ui_propose",
+      "内存",
+      "天气",
+      "Form",
+      "plainTextFallback",
+      policy.STEER_VERSION,
+    ]) {
+      if (!steer.includes(needle)) {
+        throw new Error(`always-on instructions missing ${needle}`);
+      }
+    }
+    if (steer.length < 400) {
+      throw new Error(`always-on instructions too short: ${steer.length}`);
+    }
+    console.log("always-on instructions ok", policy.STEER_VERSION, "chars", steer.length);
   }
 
   // --- lint via MCP + direct ---
@@ -149,6 +194,27 @@ async function main() {
   }
 
   await withClient({}, async (client) => {
+    const injected =
+      typeof client.getInstructions === "function" ? client.getInstructions() : "";
+    if (!injected || !injected.includes("ui_open") || !injected.includes("0.4.0-auto-steer")) {
+      throw new Error(
+        "MCP initialize instructions missing always-on steer: " +
+          JSON.stringify(injected)?.slice(0, 200),
+      );
+    }
+    console.log("MCP initialize instructions ok", injected.length);
+
+    const frag = parseToolJson(
+      await client.callTool({
+        name: "get_prompt_fragment",
+        arguments: { locale: "zh-CN", includeExamples: true },
+      }),
+    );
+    if (!frag.ok || !String(frag.fragment || "").includes("resource_board")) {
+      throw new Error("get_prompt_fragment missing recipes: " + JSON.stringify(frag).slice(0, 240));
+    }
+    console.log("get_prompt_fragment recipes ok", frag.version);
+
     const open = parseToolJson(
       await client.callTool({
         name: "ui_open",

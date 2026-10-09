@@ -254,7 +254,7 @@
     "locale": { "type": "string", "default": "zh-CN" },
     "density": { "enum": ["full", "compact", "plain_prefer"], "default": "full" },
     "includeExamples": { "type": "boolean", "default": true },
-    "maxChars": { "type": "integer", "default": 6000 }
+    "maxChars": { "type": "integer", "default": 12000 }
   }
 }
 ```

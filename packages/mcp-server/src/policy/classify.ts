@@ -18,14 +18,61 @@ const PLAIN_PATTERNS: Array<{ re: RegExp; reason: string }> = [
   { re: /一句话解释|一句话说明|用一句话|in one sentence|define (what|tcp|http)/i, reason: "one-sentence definition" },
   { re: /^(yes|no|是|否|对|错)[?？]?$|只回答\s*(yes|no)|true or false|是非题/i, reason: "yes/no" },
   { re: /地球绕着|是否.*\?$|吗[？?]\s*$/i, reason: "boolean / closed question" },
-  { re: /只要说明|列出.*字段.*说明|如何 register_package|怎么注册包/i, reason: "explanation-only" },
+  {
+    re: /只要说明|列出.*字段.*说明|如何 register_package|怎么注册包|怎么 register_package/i,
+    reason: "explanation-only",
+  },
 ];
+
+/** Intents that must never fall through to plain_text via the short-question heuristic. */
+const STRONG_UI_CUE =
+  /对比|表单|计算|步骤|滑|开关|图表|标签|内存|天气|论文|资源|cpu|磁盘|预报|weather|thesis|intake|vs\.?|哪个更好|比哪个好|勾选|checklist|待办/i;
 
 const UI_PATTERNS: Array<{ re: RegExp; reason: string; types: string[] }> = [
   {
-    re: /对比|compare|vs\.?|versus|三款|续航与售价/i,
+    re: /对比|compare|vs\.?|versus|三款|续航与售价|哪个更好|比哪个好|A\s*vs\s*B/i,
     reason: "comparison",
-    types: ["catalog.shadcn/DataTable", "catalog.shadcn/Card", "catalog.shadcn/Tabs"],
+    types: [
+      "catalog.shadcn/Comparison",
+      "catalog.shadcn/DataTable",
+      "catalog.shadcn/Card",
+      "catalog.shadcn/Tabs",
+    ],
+  },
+  {
+    re: /内存|cpu|磁盘|swap|负载|资源占用|占用率|memory usage|disk usage|load average|电脑.*(内存|cpu|磁盘|资源)|mac.*(内存|cpu)|系统.*(内存|资源|状态)/i,
+    reason: "resource / system dashboard",
+    types: [
+      "catalog.shadcn/Card",
+      "catalog.shadcn/Progress",
+      "catalog.base/Grid",
+      "catalog.charts/LineChart",
+    ],
+  },
+  {
+    re: /天气|气温|气象|预报|weather|forecast|多云|降雨|降温/i,
+    reason: "weather card",
+    types: ["catalog.shadcn/Card", "catalog.base/Stack", "catalog.charts/LineChart"],
+  },
+  {
+    re: /毕业论文|毕业设计|博士论文|硕士论文|thesis|写作需求|学科方向|帮我写一篇.*论文|论文写作/i,
+    reason: "multi-field intake form",
+    types: [
+      "catalog.shadcn/Form",
+      "catalog.shadcn/Input",
+      "catalog.shadcn/ButtonGroup",
+      "catalog.shadcn/Card",
+    ],
+  },
+  {
+    re: /填写|问卷|intake|多字段|收集.*信息|先填/i,
+    reason: "multi-field intake form",
+    types: ["catalog.shadcn/Form", "catalog.shadcn/Input", "catalog.shadcn/ButtonGroup"],
+  },
+  {
+    re: /checklist|勾选|待办/i,
+    reason: "checklist",
+    types: ["catalog.shadcn/Checklist"],
   },
   {
     re: /趋势|折线|营收|chart|line chart|画一个.*图/i,
@@ -121,9 +168,11 @@ export function classifyFormat(query: string): ClassifyResult {
     }
   }
 
-  // Short factual-looking questions without UI cues
+  // Short factual-looking questions without UI cues.
+  // Resource / weather / intake / compare never count as "closed facts".
   if (
     uiHits === 0 &&
+    !STRONG_UI_CUE.test(q) &&
     (q.length < 40 || /[？?]\s*$/.test(q)) &&
     !/对比|表单|计算|步骤|开关|进度|图表|标签/i.test(q)
   ) {
@@ -149,7 +198,7 @@ export function classifyFormat(query: string): ClassifyResult {
   }
   if (uiHits > 0 && plainHits > 0) {
     // Prefer UI when both fire but UI is stronger intent words
-    const preferUi = /对比|计算|表单|步骤|滑|开关|图表/i.test(q);
+    const preferUi = STRONG_UI_CUE.test(q);
     return preferUi
       ? {
           decision: "ui",
@@ -187,4 +236,8 @@ export const EVAL_HEURISTIC_CASES: Array<{
   { id: "8", query: "帮我做一个小费计算器：账单金额、小费比例、人数", expect: "ui" },
   { id: "11", query: "给我一个是否加班的二选一", expect: "ui" },
   { id: "10", query: "用可点步骤说明怎么更换自行车内胎", expect: "ui" },
+  { id: "30", query: "现在我的电脑内存怎么样", expect: "ui" },
+  { id: "31", query: "今天北京天气怎么样", expect: "ui" },
+  { id: "32", query: "给我写一篇博士生的毕业论文", expect: "ui" },
+  { id: "33", query: "A 方案和 B 方案比哪个好", expect: "ui" },
 ];

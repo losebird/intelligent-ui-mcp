@@ -1,7 +1,9 @@
 import type { CatalogRegistry } from "./catalog/registry.js";
+import { buildAlwaysOnInstructions, STEER_VERSION } from "./steer.js";
 
 /** Versioned prompt rules for design judgment (G1 Phase A). Not OpenAI RL weights. */
-export const PROMPT_FRAGMENT_VERSION = "0.3.0-hf-templates";
+export const PROMPT_FRAGMENT_VERSION = STEER_VERSION;
+export { buildAlwaysOnInstructions, STEER_VERSION } from "./steer.js";
 
 export function buildPromptFragment(
   catalog: CatalogRegistry,
@@ -15,7 +17,7 @@ export function buildPromptFragment(
   const locale = opts.locale ?? "zh-CN";
   const density = opts.density ?? "full";
   const includeExamples = opts.includeExamples ?? true;
-  const maxChars = opts.maxChars ?? 6000;
+  const maxChars = opts.maxChars ?? 12000;
   const zh = locale.startsWith("zh");
 
   const enabled = catalog.listComponents({ enabledOnly: true });
@@ -32,22 +34,24 @@ export function buildPromptFragment(
   lines.push(zh ? "# Intelligent UI 使用说明" : "# Intelligent UI instructions");
   lines.push(`<!-- promptFragmentVersion=${PROMPT_FRAGMENT_VERSION} -->`);
   lines.push("");
+  lines.push(buildAlwaysOnInstructions({ locale, includeRecipes: includeExamples }));
+  lines.push("");
   lines.push(
     zh
-      ? "你可以通过 MCP tools 生成可交互界面，而不是只输出纯文字。设计判断 = 本 prompt + MCP lint + 可选 policy 裁判（≠ OpenAI RL 权重）。"
-      : "You can produce interactive UI via MCP tools. Design judgment = this prompt + MCP lint + optional policy referee (≠ OpenAI RL weights).",
+      ? "你可以通过 MCP tools 生成可交互界面，而不是只输出纯文字。设计判断 = 本 prompt + MCP lint + 可选 policy 裁判（≠ OpenAI RL 权重）。上面的自动选用规则已同时写入 MCP `instructions`，不必先调 `get_prompt_fragment`。"
+      : "You can produce interactive UI via MCP tools. Design judgment = this prompt + MCP lint + optional policy referee (≠ OpenAI RL weights). The auto-steer block above is also MCP `instructions`; you do not need to call `get_prompt_fragment` first.",
   );
   lines.push("");
   lines.push(zh ? "## 格式选择（强制）" : "## Format choice (mandatory)");
   lines.push(
     zh
-      ? "1. **prefer_plain_text**：事实题、是非题、单句定义、简单算术、无需点击确认的短答 → 不要建树；用 `ui_propose` 的 `plainTextFallback`，或根本不调 UI tools。"
-      : "1. **prefer_plain_text**: facts, yes/no, one-sentence definitions, simple arithmetic, short answers needing no click → skip the tree; use `plainTextFallback` or no UI tools.",
+      ? "1. **prefer_plain_text**：事实题、是非题、单句定义、简单算术、用户明确只要说明 → 不要建树。短问「内存/天气怎么样」**不是**这类题。"
+      : "1. **prefer_plain_text**: facts, yes/no, one-sentence definitions, simple arithmetic, explicit explain-only → skip the tree. Short “how’s memory/weather” is **not** this class.",
   );
   lines.push(
     zh
-      ? "2. **用 UI**：对比、多步流程、可调参/计算器、需点击确认、表格/图表展示、表单原型 → 建 `UiNode` 树。"
-      : "2. **Use UI**: comparisons, multi-step flows, adjustable params/calculators, click-to-confirm, tables/charts, form prototypes → build a `UiNode` tree.",
+      ? "2. **用 UI**：资源看板、天气、多字段采集、对比、多步流程、可调参/计算器、需点击确认、表格/图表、表单原型 → 建 `UiNode` 树。不要 `plainTextFallback`。"
+      : "2. **Use UI**: resource boards, weather, multi-field intake, comparisons, multi-step flows, adjustable params/calculators, click-to-confirm, tables/charts, form prototypes → build a `UiNode` tree. Do not `plainTextFallback`.",
   );
   lines.push(
     zh
@@ -63,6 +67,9 @@ export function buildPromptFragment(
   lines.push("- 填参计算 → `Form` + `Input`/`Slider` + `Button`；衍生值可用 session `reducers` / 节点 `expr`");
   lines.push("- 分步流程 → `catalog.shadcn/Stepper`；待办勾选 → `catalog.shadcn/Checklist`");
   lines.push("- 地点/标记示意 → `catalog.shadcn/MapStub`；轻量对战小游戏 → `catalog.shadcn/GameShell`");
+  lines.push("- 系统资源 / 内存 CPU 磁盘 → `Grid` + 多枚 `Card` + `Progress`（见 resource_board 食谱）");
+  lines.push("- 天气 / 预报 → `Card` + `LineChart` 逐小时 + `BarChart` 未来几天（见 weather_card 食谱）");
+  lines.push("- 多字段采集 / 论文写作需求 → `Form` + `ButtonGroup`（单选/分段）+ `Input`（见 intake_form 食谱）");
   lines.push("- 警告确认 → `Callout` / `AlertDialog`");
   lines.push("");
   lines.push("## Protocol rules");
@@ -266,7 +273,14 @@ export function buildPromptFragment(
 
   let fragment = lines.join("\n");
   if (fragment.length > maxChars) {
-    fragment = fragment.slice(0, maxChars - 20) + "\n…[truncated]";
+    // Keep auto-steer + recipes; drop the enabled-component dump first.
+    const cut = fragment.indexOf("\n## Enabled components\n");
+    if (cut > 0 && cut < maxChars) {
+      fragment = fragment.slice(0, cut) + "\n…[enabled catalog truncated]";
+    }
+    if (fragment.length > maxChars) {
+      fragment = fragment.slice(0, maxChars - 20) + "\n…[truncated]";
+    }
   }
   return { fragment, enabledTypes, version: PROMPT_FRAGMENT_VERSION };
 }

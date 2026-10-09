@@ -57,6 +57,34 @@
       "expect": {
         "format": "ui"
       }
+    },
+    {
+      "id": "eval-030",
+      "prompt": "现在我的电脑内存怎么样",
+      "expect": {
+        "format": "ui"
+      }
+    },
+    {
+      "id": "eval-031",
+      "prompt": "今天北京天气怎么样",
+      "expect": {
+        "format": "ui"
+      }
+    },
+    {
+      "id": "eval-032",
+      "prompt": "给我写一篇博士生的毕业论文",
+      "expect": {
+        "format": "ui"
+      }
+    },
+    {
+      "id": "eval-033",
+      "prompt": "A 方案和 B 方案比哪个好",
+      "expect": {
+        "format": "ui"
+      }
     }
   ]
 }

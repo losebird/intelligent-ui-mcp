@@ -5,7 +5,7 @@
 > ① 已完成：stdio 服务、两包真 schema、renderer-react、events NDJSON 旁路、冒烟。  
 > ② 已完成：Host 参考窗（文件旁路展示 + actions.ndjson）。  
 > ③ 已完成：`mode=ops` / `streaming_chunks`、`ui_patch` / `ui_report_action`、actions watch + `ui_drain_actions`、G6 骨架（state.set → patch）。  
-> ④ 已完成：`register_package` / `register_component` / `unregister`、信任目录 + hash、`acme.gauges` 示例、Host 动态 import。  
+> ④ 已完成：`register_package` / `register_component` / `unregister`、信任目录 + hash、`acme.gauges` 示例、Host **iframe 沙箱**加载自定义包。  
 > ⑤ 已完成：设计判断 = **prompt + lint + 可选裁判**（≠ OpenAI RL）；`policy_check` / `evaluate_expr`；G6 安全 expr + `reducers`。  
 > ⑥ 已完成：`catalog.charts` 真渲染；radix/mui/antd/chakra schema-only + Host 别名；`evals/cases` ≥20 + `npm run eval` / `catalog-smoke`。
 
@@ -33,7 +33,8 @@ npm run build
       "command": "node",
       "args": ["/ABS/intelligent-ui-mcp/packages/mcp-server/dist/index.js"],
       "env": {
-        "IUI_SESSION_DIR": "/ABS/.intelligent-ui-mcp/sessions"
+        "IUI_SESSION_DIR": "/ABS/.intelligent-ui-mcp/sessions",
+        "IUI_HOST_TOKEN": "replace-with-shared-secret"
       }
     }
   }
@@ -44,6 +45,8 @@ npm run build
 
 ```bash
 export IUI_SESSION_DIR="$HOME/.intelligent-ui-mcp/sessions"
+# 可选：显式共享 Host API 密钥（不设则自动读写 ~/.intelligent-ui-mcp/host-token）
+# export IUI_HOST_TOKEN="your-shared-secret"
 npm start
 # 等价：node packages/mcp-server/dist/index.js
 ```
@@ -56,16 +59,32 @@ npm start
 
 ```bash
 export IUI_SESSION_DIR="$HOME/.intelligent-ui-mcp/sessions"
+# 与 MCP 使用同一 IUI_HOST_TOKEN（或同一 host-token 文件）
+# export IUI_HOST_TOKEN="your-shared-secret"
 npm run host
 # 打开终端提示的本机 URL（默认 http://127.0.0.1:5173）
 ```
 
+### Host API 鉴权（必读）
+
+Host HTTP（`/api/current`、`/api/snapshot|events|…`、`POST /api/action`）需要共享密钥；**仅 `GET /api/health` 可匿名**（供 `ui_open` probe）。
+
+| 配置 | 说明 |
+|------|------|
+| `IUI_HOST_TOKEN` | 推荐。MCP 与 Host **必须相同** |
+| `IUI_HOST_TOKEN_FILE` | 可选；默认 `~/.intelligent-ui-mcp/host-token`（0600）。未设 env 时自动生成并复用 |
+| 请求携带 | `Authorization: Bearer <token>` 或头 `X-IUI-Host-Token` 或查询 `?token=` |
+| CORS | **不**反射任意 Origin；仅 loopback（`127.0.0.1` / `localhost` / `::1`）。额外来源用 `IUI_CORS_ORIGINS`（逗号分隔） |
+| 无 token | 受保护路由 → **401**；非白名单 Origin → **403** |
+
+参考 Host 窗会经 Vite 注入同进程 token；外部客户端（smoke / adapter）须自行带头。
+
 推荐顺序：
 
-1. 设置 `IUI_SESSION_DIR`
+1. 设置 `IUI_SESSION_DIR`（及可选 `IUI_HOST_TOKEN`）
 2. `npm run host` → 浏览器打开 Host
 3. Cursor / harness 连接 MCP，调用 `ui_open` → Host 顶栏出现 session
-4. （可选）`register_package` 自定义包 → Host 读 `registry.json` 动态加载
+4. （可选）`register_package` 自定义包 → Host 读 `registry.json`，经 `/api/package-entry` + iframe 沙箱加载
 5. `ui_propose`（tree 或 ops）出树 → 主区渲染控件
 6. 点击 Button / 拖滑条 → Host 写 `{sessionId}.actions.ndjson`
 7. MCP **watch 入库**并广播 `ui.action`；harness 用 `ui_drain_actions` 取走 → `ui_patch` 更新衍生节点
@@ -79,6 +98,7 @@ npm run build
 npm run smoke         # MCP tree path → SMOKE_OK
 npm run host-smoke    # Host API + actions.ndjson → HOST_SMOKE_OK
 npm run stream-smoke  # ops / action / drain / chunks → STREAM_SMOKE_OK
+npm run sandbox-smoke # iframe 信任边界 + package-entry 鉴权 → SANDBOX_SMOKE_OK
 npm run custom-smoke  # register / hash / unregister / Gauge propose → CUSTOM_SMOKE_OK
 npm run policy-smoke  # lint / policy_check / expr / heuristic → POLICY_SMOKE_OK
 npm run catalog-smoke # charts + schema-only + lint → CATALOG_SMOKE_OK
@@ -155,7 +175,7 @@ node scripts/hash-package-entry.mjs examples/custom-packages/acme-gauges/dist/re
 `register_package({ path, enable?, strictHash? })`：`strictHash` 默认 true；缺 hash → `HASH_MISSING`；错 hash → `HASH_MISMATCH`；目录外 → `PATH_NOT_TRUSTED`。  
 **永不** eval 模型 JS；不支持 npm/url。
 
-Host：轮询 `GET /api/packages` → 对 `entryAbsPath` 做 Vite `/@fs` 动态 `import()`，按 `exports` 映射到 `UiRenderer.extraRenderers`；失败黄条 + `catalog.base/Unknown`。
+Host：轮询 `GET /api/packages` → `GET /api/package-entry/:id` 取源码 → iframe 沙箱按 `exports` 映射到 `UiRenderer.extraRenderers`；失败黄条 / Sandbox error。
 
 规范全文：[`docs/CUSTOM-PACKAGE-MANIFEST.md`](./docs/CUSTOM-PACKAGE-MANIFEST.md)。
 
@@ -204,6 +224,10 @@ scripts/custom-package-smoke.mjs
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `IUI_SESSION_DIR` | `~/.intelligent-ui-mcp/sessions` | 事件/快照/actions/registry 旁路（MCP 与 Host **必须一致**） |
+| `IUI_HOST_TOKEN` | （自动生成到 token 文件） | Host API 共享密钥；MCP 与 Host **必须一致** |
+| `IUI_HOST_TOKEN_FILE` | `~/.intelligent-ui-mcp/host-token` | token 落盘路径（0600） |
+| `IUI_CORS_ORIGINS` | （空） | 额外允许的 CORS Origin（逗号分隔）；默认仅 loopback |
+| `IUI_HOST_URL` | `http://127.0.0.1:5173` | `ui_open` probe / embed 基址 |
 | `IUI_ACTION_TIMEOUT_MS` | `120000` | `action_pending` 超时回 idle |
 | `IUI_TRUSTED_DIRS` | （追加到默认三目录） | `:` 或 OS 分隔的额外绝对信任路径 |
 | `IUI_REPO_ROOT` | 自动探测 | monorepo 根（解析默认信任目录） |
@@ -224,15 +248,20 @@ npm run eval            # → evals/results/latest.md
 
 ## ③ 已知简化
 
-- `streaming_chunks`：**仅在 `chunkDone=true` 时整段 JSON.parse**（树 / `{tree}` / `{ops}`）；不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
+- `streaming_chunks`：**`mode=ops` + JSONL 行**在到达时即 apply（不必等 `chunkDone`）；非 JSONL 缓冲仍在 `chunkDone=true` 时整段 JSON.parse（树 / `{tree}` / `{ops}`）。不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
 - `refresh`：可选字段；若传入仅记 warnings 别名，ops 照常应用。
 - `replace_tree`：作为 ops 便利算子（整树替换），与事件 `ui.replace` 并存。
 
 ## ④ 已知简化
 
 - `register_component`：仅已注册 local 包上的 **schema 热更新**（不换 entry）；换入口请重新 `register_package`。
-- Host 动态加载依赖 Vite `/@fs`（dev）；不做 iframe 硬沙箱。
+- 自定义包默认 **iframe 沙箱**（`sandbox="allow-scripts"` + CSP `connect-src 'none'`）；builtin 仍主进程。详见 [`docs/CUSTOM-PACKAGE-MANIFEST.md`](./docs/CUSTOM-PACKAGE-MANIFEST.md)「信任边界」。
+- 调试逃生舱：`IUI_CUSTOM_PACKAGE_MAIN_WORLD=1`（同页 `/@fs` import，不安全）。
 - 无 npm/url 远程装包。
+
+## CI
+
+GitHub Actions（`.github/workflows/ci.yml`）：`npm ci` → `build` → `smoke` / `host-smoke` / `stream-smoke` / `custom-smoke` / `sandbox-smoke` / `eval:validate`。CI 注入 `IUI_HOST_TOKEN`。
 
 ## License
 

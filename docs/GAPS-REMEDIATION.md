@@ -150,7 +150,7 @@ Cursor / 多数 MCP 宿主只把 tool result 当文本气泡。Intelligent UI �
 2. Manifest 含 `id`、`version`、`components[]`、`renderer.entry`、可选 `renderer.hash`（sha256 of entry bundle）。
 3. 加载前：路径规范化拒绝 `..` 逃逸；校验 hash（若提供）；Host 用动态 `import()` **仅加载该 entry**，**绝不** `eval` 模型输出的 JS，也绝不执行组件树里的字符串脚本。
 4. 失败降级：加载失败 → 该 type 用 `catalog.base/Unknown` 占位 + Host 黄条警告；MCP `register_package` 返回 `ok: false` 与原因。
-5. 权限：自定义包默认 **不能** 读任意文件系统（renderer 自行约束）；文档要求作者勿在 entry 里搞网络外联（软约束，v0.1 不沙箱化 iframe；④ 可评估 iframe/webview 隔离为增强）。
+5. 权限：自定义包默认 **不能** 读任意文件系统；Host 以 **iframe 沙箱**加载（`allow-scripts` only + CSP `connect-src 'none'`）；文档仍要求作者勿外联（CSP 硬拦网络）。
 
 ### 依赖步骤
 ④；manifest 规范本阶段先写死。
@@ -167,7 +167,7 @@ Cursor / 多数 MCP 宿主只把 tool result 当文本气泡。Intelligent UI �
 - **永不** eval 模型 JS；无 npm/url。
 
 ### 明确不做 / 退路
-- 不做：npm/url 远程装包；模型生成的 inline JS 组件；④ 不做 iframe 硬沙箱。
+- 不做：npm/url 远程装包；模型生成的 inline JS 组件；完整 OS 进程沙箱（iframe 为 Web 边界）。
 - 退路：自定义仅 schema + 强制手写 Host 映射表（体验折扣，仅当用户放弃「注册即渲染」时启用）。
 
 ---

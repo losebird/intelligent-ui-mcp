@@ -21,7 +21,8 @@
     "eval": "node scripts/eval-runner.mjs",
     "eval:validate": "node scripts/eval-runner.mjs --validate-only",
     "live-demo": "node scripts/live-demo.mjs",
-    "stream-phone-compare": "node scripts/stream-phone-compare.mjs"
+    "stream-phone-compare": "node scripts/stream-phone-compare.mjs",
+    "sandbox-smoke": "node scripts/sandbox-smoke.mjs"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"

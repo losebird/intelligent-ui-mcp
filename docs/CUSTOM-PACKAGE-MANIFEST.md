@@ -85,14 +85,14 @@ Env：`IUI_TRUSTED_DIRS` = `:` 或 OS path sep 分隔的绝对路径列表。
 4. 解析 entry realpath，仍须在包根内。
 5. 若 `strictHash`：算 hash，不匹配 → `HASH_MISMATCH`。
 6. 记录到 registry；返回 `ok`。
-7. Host 下次加载 session 或收到 `package.registered` 旁路通知时 `import(entry)`。
+7. Host 下次加载 session 时经鉴权 `GET /api/package-entry/:id` 取 entry 源码，在 **iframe 沙箱**内 blob-import（builtin 除外）。
 
 ## Host 加载与失败降级
 
 | 情况 | 行为 |
 |------|------|
-| import 抛错 | 该包 `renderStatus=failed`；相关 type → `catalog.base/Unknown`；黄条 |
-| 缺 export | 该组件 Unknown；包其余组件仍可用 |
+| iframe / blob-import 抛错 | 该组件槽位显示 Sandbox error；包级黄条；相关 type 可降级 Unknown |
+| 缺 export | 沙箱报 missing export；包其余组件仍可注册 |
 | hash 失败 | 整包不启用 |
 | props 校验失败（运行时） | 节点级警告，尽量用 defaults 渲染 |
 
@@ -113,8 +113,8 @@ export default { Gauge };
 ```
 
 - Props 与 schema 对齐；额外注入：`onAction`, `nodeId`, `sessionId`（Host 注入，不在 schema 声明）。
-- 禁止在模块顶层做网络请求写磁盘（文档约定；④ 不做完整 OS 沙箱）。
-- 可选增强（后）：iframe + postMessage 隔离。
+- 禁止在模块顶层做网络请求写磁盘；**Host 默认 iframe CSP `connect-src 'none'` 强制禁网**。
+- ✅ iframe + postMessage 隔离已落地（见下方「信任边界」）。
 
 ## `register_component` 与包的关系
 
@@ -127,7 +127,7 @@ export default { Gauge };
 
 ## 验收（④）
 
-- [x] trusted 内合法包 → `list_*` 可见 → propose `acme.gauges/Gauge` → snapshot 含 type（Host 经 `registry.json` + `/@fs` `import(entry)` 真渲染）
+- [x] trusted 内合法包 → `list_*` 可见 → propose `acme.gauges/Gauge` → snapshot 含 type（Host 经 `registry.json` + `/api/package-entry` + iframe 沙箱渲染）
 - [x] trusted 外 path → `PATH_NOT_TRUSTED`
 - [x] 改字节 / 错 hash → `HASH_MISMATCH`；缺 hash + `strictHash` → `HASH_MISSING`
 - [x] 坏 entry / 缺 export → Host Unknown 黄条降级，MCP 不崩溃
@@ -135,8 +135,23 @@ export default { Gauge };
 
 示例包：[`examples/custom-packages/acme-gauges/`](../examples/custom-packages/acme-gauges/)。
 
+## 信任边界（Host 沙箱）
+
+| 层 | 行为 |
+|----|------|
+| **builtin** `catalog.*` | 仍在 Host 主文档 / `renderer-react` 同进程渲染（随应用分发，视为受信） |
+| **自定义包** | **默认** `iframe` + `sandbox="allow-scripts"`（**不开** same-origin）→ opaque origin |
+| 加载 | Parent（Host）用 token 调 `/api/package-entry/:id` 读源码 → `postMessage` 把 React UMD + moduleSource 送进 iframe → blob `import()` |
+| 协议 | `iui.sandbox.v1`：`boot` / `init` / `props` / `ready` / `action` / `resize` / `error` / `dispose`；parent 校验 `event.source` |
+| CSP（iframe） | `default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; connect-src 'none'; …` |
+| 能力面 | 无 Host token、无 `/api`、无父页 DOM、无导航、无网络（CSP）；仅能 `postMessage` 回 action |
+| 逃生舱 | `IUI_CUSTOM_PACKAGE_MAIN_WORLD=1` → 旧版同页 `/@fs` `import()`（**不安全**，仅调试） |
+
+详见 `docs/AUDIT-P0-SANDBOX-CI.md`。冒烟：`npm run sandbox-smoke`。
+
 ## 明确不做
 
 - npm / url 包源（后开需另案：锁定、审计、镜像）。
 - 模型生成 inline 组件源码并执行。
 - 全局自动信任「任意 Downloads 路径」。
+- 完整 OS 进程沙箱 / seccomp（iframe 为 Web 能力边界，非容器）。

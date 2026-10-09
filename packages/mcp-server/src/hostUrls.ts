@@ -21,12 +21,14 @@ export function buildHostHint(opts: {
     return (
       `Host ready. Beside chat: open embedUrl in Simple Browser / side panel / iframe → ${embedUrl}. ` +
       `Full chrome → ${hostUrl}. IUI_SESSION_DIR=${sessionDir} must match MCP. ` +
+      `Host API auth: set the same IUI_HOST_TOKEN (or share ~/.intelligent-ui-mcp/host-token) for MCP + Host. ` +
       `Do not block on desktop screenshots.`
     );
   }
   return (
-    `Host not reachable at ${hostUrl}. Start: IUI_SESSION_DIR=${sessionDir} npm run host ` +
-    `then open embed beside chat → ${embedUrl} (or full → ${hostUrl}).`
+    `Host not reachable at ${hostUrl}. Start: IUI_SESSION_DIR=${sessionDir} IUI_HOST_TOKEN=<same-as-mcp> npm run host ` +
+    `then open embed beside chat → ${embedUrl} (or full → ${hostUrl}). ` +
+    `Token auto-created at ~/.intelligent-ui-mcp/host-token if unset.`
   );
 }
 

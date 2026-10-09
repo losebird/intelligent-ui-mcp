@@ -92,14 +92,16 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 | Host 窗 | `apps/host-window`（Vite + React；**M1 经 `@intelligent-ui/host-adapter`**） |
 | Session API | `apps/host-window/server/sessionApi.mjs`（`/api/current` `/api/snapshot/:id` `/api/events/:id` `POST /api/action`） |
 | 客户端泵 | `createHttpEventPump` + `HostSurfaceView`（见 `packages/host-adapter`） |
-| Action 旁路 | `{IUI_SESSION_DIR}/{sessionId}.actions.ndjson`（方案 C，actionId 幂等） |
-| 启动 | `IUI_SESSION_DIR=... npm run host` |
-| 验收 | `npm run host-smoke` → `HOST_SMOKE_OK` |
+| Action 旁路 | `{IUI_SESSION_DIR}/{sessionId}.actions.ndjson`（方案 C，actionId 幂等：解析 NDJSON + 内存 Set） |
+| 鉴权 | `IUI_HOST_TOKEN` / `~/.intelligent-ui-mcp/host-token`；除 `GET /api/health` 外均需 Bearer / `X-IUI-Host-Token` |
+| CORS | 仅 loopback Origin；不反射任意 Origin |
+| 启动 | `IUI_SESSION_DIR=... IUI_HOST_TOKEN=... npm run host` |
+| 验收 | `npm run host-smoke` → `HOST_SMOKE_OK`（含 401/403 断言） |
 
 ## ④ Host 与自定义包
 
 - 轮询 `GET /api/packages`（读 `IUI_SESSION_DIR/registry.json`）。
-- 对每个包 `entryAbsPath`：Vite `/@fs` 动态 `import()`，按 `exports` 注入 `UiRenderer.extraRenderers`。
+- 对每个自定义包：鉴权 `GET /api/package-entry/:id` 取源码 → **iframe 沙箱**（`iui.sandbox.v1`）注入 `UiRenderer.extraRenderers`；builtin 仍主进程。
 - import 失败 / 缺 export → 黄条 + 该 type `catalog.base/Unknown`；MCP 侧已拒的路径 Host 不会看到。
 
 ## 客户端事件路径（M1：host-adapter）
@@ -111,7 +113,7 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 | Surface | `@intelligent-ui/host-adapter` `createIntelligentUiHostSurface` | 本地镜像 + `applyEvent` / `setSnapshot` |
 | 泵 | `createHttpEventPump` | 轮询 Host HTTP；`onCurrent` / `onEvent` / sticky `onPollError` |
 | 画布 | `HostSurfaceView` | 包 `UiRenderer`；点击 → `surface.onAction` → `POST /api/action`（`api.ts`） |
-| API 服务 | `server/sessionApi.mjs` | **未改**；仍为 NDJSON / snapshot / actions 旁路 |
+| API 服务 | `server/sessionApi.mjs` + `hostAuth.mjs` | NDJSON / snapshot / actions 旁路 + **token 鉴权** + 严格 CORS |
 
 契约见 [`HOST-RENDERER-ADAPTER.md`](./HOST-RENDERER-ADAPTER.md)；验收勾选 [`HOST-ADAPTER-M0-CHECKLIST.md`](./HOST-ADAPTER-M0-CHECKLIST.md) §M1-host-wire。
 
@@ -122,6 +124,16 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 - `api.ts`：GET/POST（config / packages / action）对可重试网络错误短重试（同 Origin、`cache: no-store`）。
 - `createHttpEventPump`：GET 短重试；连续失败才 sticky 红条（默认 3 次）；指数退避；snapshot/events 软失败不盖掉 status。
 - `vite.config.ts`：session API 中间件置顶；`watch.ignored` 排除 `IUI_SESSION_DIR` / `~/.intelligent-ui-mcp`，避免写 NDJSON 重启 Vite。
+
+## Host API 鉴权与 CORS
+
+1. **共享密钥**：`IUI_HOST_TOKEN` 环境变量，或文件 `IUI_HOST_TOKEN_FILE`（默认 `~/.intelligent-ui-mcp/host-token`，mode `0600`）。MCP 启动与 `npm run host` 都会 `ensure` 同一路径。
+2. **携带方式**：`Authorization: Bearer <token>`，或请求头 `X-IUI-Host-Token`，或查询参数 `?token=`（embed PoC）。
+3. **公开路由**：仅 `GET /api/health`（及 CORS preflight `OPTIONS`）。其余 `/api/*` 无 token → **401**。
+4. **CORS**：`Access-Control-Allow-Origin` **只**允许 hostname 为 `127.0.0.1` / `localhost` / `::1` 的 Origin；可用 `IUI_CORS_ORIGINS` 追加。**禁止**反射任意 Origin。非白名单 → **403** `CORS_ORIGIN_DENIED`。
+5. **actionId 幂等**：按行 `JSON.parse` 后比对 `actionId` 字段（加进程内 Set），**不用**全文 `includes` 字符串匹配。
+
+详见根 README「Host API 鉴权」。
 
 ## 明确不做
 

@@ -10,7 +10,7 @@
   },
   "renderer": {
     "entry": "./dist/render.js",
-    "hash": "sha256-c2b7793baf9e91dd9b6f3232caaa08fc217d7aa5e6778759b27bdaf02928f77c",
+    "hash": "sha256-95a7d0d909feda06552f816dec1570b081707ad691c55a3015f4880a797c31f2",
     "exports": {
       "Gauge": "Gauge"
     }
@@ -18,18 +18,29 @@
   "components": [
     {
       "name": "Gauge",
-      "description": "半圆仪表盘，展示 0–max 数值",
+      "description": "\u534a\u5706\u4eea\u8868\u76d8\uff0c\u5c55\u793a 0\u2013max \u6570\u503c",
       "propsSchema": {
         "type": "object",
-        "required": ["value"],
+        "required": [
+          "value"
+        ],
         "properties": {
-          "value": { "type": "number" },
-          "max": { "type": "number", "default": 100 },
-          "label": { "type": "string" }
+          "value": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number",
+            "default": 100
+          },
+          "label": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       },
-      "actions": ["change"],
+      "actions": [
+        "change"
+      ],
       "enabledByDefault": true
     }
   ]

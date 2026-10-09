@@ -1,11 +1,29 @@
 /**
  * File-bypass session API helpers + Connect-style middleware for Host window.
  * Reads IUI_SESSION_DIR (current.json / snapshot / events) and writes actions.ndjson.
+ *
+ * Auth: all /api/* except GET /api/health require shared IUI_HOST_TOKEN
+ * (Bearer / X-IUI-Host-Token / ?token=). See hostAuth.mjs.
  */
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import {
+  applyStrictCors,
+  ensureHostToken,
+  extractRequestToken,
+  isPublicApiPath,
+  tokensEqual,
+} from "./hostAuth.mjs";
+
+export {
+  resolveHostToken,
+  ensureHostToken,
+  defaultHostTokenPath,
+  extractRequestToken,
+  isAllowedCorsOrigin,
+} from "./hostAuth.mjs";
 
 export function resolveSessionDir(override) {
   const dir =
@@ -57,8 +75,34 @@ export function actionsPath(dir, sessionId) {
   return path.join(dir, `${sessionId}.actions.ndjson`);
 }
 
+/** In-memory actionId sets per session file (process-local hot path). */
+const seenActionIdsByFile = new Map();
+
+function loadSeenActionIds(file) {
+  const cached = seenActionIdsByFile.get(file);
+  if (cached) return cached;
+  const set = new Set();
+  if (fs.existsSync(file)) {
+    const raw = fs.readFileSync(file, "utf8");
+    for (const line of raw.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const obj = JSON.parse(line);
+        if (obj && typeof obj.actionId === "string" && obj.actionId) {
+          set.add(obj.actionId);
+        }
+      } catch {
+        /* skip corrupt lines */
+      }
+    }
+  }
+  seenActionIdsByFile.set(file, set);
+  return set;
+}
+
 /**
- * Append action to {sessionId}.actions.ndjson. Idempotent on actionId.
+ * Append action to {sessionId}.actions.ndjson. Idempotent on actionId
+ * via parsed NDJSON + in-memory Set (not substring includes).
  * @returns {{ ok: true, actionId: string, duplicate?: boolean } | { ok: false, error: string }}
  */
 export function appendAction(dir, body) {
@@ -75,6 +119,10 @@ export function appendAction(dir, body) {
     (typeof body.actionId === "string" && body.actionId) ||
     `a_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
+  if (!/^[A-Za-z0-9_.:-]{1,128}$/.test(actionId)) {
+    return { ok: false, error: "actionId invalid" };
+  }
+
   const record = {
     actionId,
     sessionId,
@@ -90,36 +138,14 @@ export function appendAction(dir, body) {
   const file = actionsPath(dir, sessionId);
   fs.mkdirSync(dir, { recursive: true });
 
-  if (fs.existsSync(file)) {
-    const existing = fs.readFileSync(file, "utf8");
-    if (
-      existing.includes(`"actionId":"${actionId}"`) ||
-      existing.includes(`"actionId": "${actionId}"`)
-    ) {
-      return { ok: true, actionId, duplicate: true };
-    }
+  const seen = loadSeenActionIds(file);
+  if (seen.has(actionId)) {
+    return { ok: true, actionId, duplicate: true };
   }
 
   fs.appendFileSync(file, JSON.stringify(record) + "\n", "utf8");
+  seen.add(actionId);
   return { ok: true, actionId, duplicate: false };
-}
-
-function applyCors(req, res) {
-  const origin = req.headers?.origin;
-  // Reflect Origin when present (agent browsers / localhost vs 127.0.0.1);
-  // otherwise allow same-origin tools.
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin");
-  } else {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Accept, Authorization, X-Requested-With",
-  );
-  res.setHeader("Access-Control-Max-Age", "86400");
 }
 
 function sendJson(res, status, obj) {
@@ -157,9 +183,12 @@ async function readBody(req) {
 
 /**
  * Connect / Vite middleware: /api/*
+ * @param {string} [sessionDir]
+ * @param {{ hostToken?: string }} [opts]
  */
-export function createSessionMiddleware(sessionDir) {
+export function createSessionMiddleware(sessionDir, opts = {}) {
   const dir = resolveSessionDir(sessionDir);
+  const expectedToken = opts.hostToken ?? ensureHostToken();
 
   return async function sessionMiddleware(req, res, next) {
     const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -169,10 +198,15 @@ export function createSessionMiddleware(sessionDir) {
       return next();
     }
 
-    applyCors(req, res);
+    const corsOk = applyStrictCors(req, res);
+    if (!corsOk) {
+      return sendJson(res, 403, {
+        ok: false,
+        error: "CORS_ORIGIN_DENIED",
+        message: "Origin not on loopback allowlist",
+      });
+    }
 
-    // Preflight — without this, cross-origin (localhost≠127.0.0.1, agent proxy)
-    // POSTs surface as TypeError: Failed to fetch in the browser.
     if (req.method === "OPTIONS") {
       res.statusCode = 204;
       res.setHeader("Content-Length", "0");
@@ -180,9 +214,27 @@ export function createSessionMiddleware(sessionDir) {
       return;
     }
 
+    const publicPath = isPublicApiPath(pathname, req.method);
+    if (!publicPath) {
+      const provided = extractRequestToken(req, url);
+      if (!provided || !tokensEqual(provided, expectedToken)) {
+        res.setHeader("WWW-Authenticate", 'Bearer realm="intelligent-ui-host"');
+        return sendJson(res, 401, {
+          ok: false,
+          error: "UNAUTHORIZED",
+          message:
+            "Host API requires IUI_HOST_TOKEN (Authorization: Bearer …, X-IUI-Host-Token, or ?token=)",
+        });
+      }
+    }
+
     try {
       if (req.method === "GET" && pathname === "/api/health") {
-        return sendJson(res, 200, { ok: true, sessionDir: dir });
+        return sendJson(res, 200, {
+          ok: true,
+          sessionDir: dir,
+          auth: "required-except-health",
+        });
       }
 
       if (req.method === "GET" && pathname === "/api/config") {
@@ -190,6 +242,7 @@ export function createSessionMiddleware(sessionDir) {
           ok: true,
           sessionDir: dir,
           iuiSessionDirEnv: process.env.IUI_SESSION_DIR ?? null,
+          authRequired: true,
         });
       }
 
@@ -250,6 +303,89 @@ export function createSessionMiddleware(sessionDir) {
         });
       }
 
+      const pkgEntryMatch = pathname.match(/^\/api\/package-entry\/([^/]+)$/);
+      if (req.method === "GET" && pkgEntryMatch) {
+        const packageId = decodeURIComponent(pkgEntryMatch[1]);
+        const registryFile = path.join(dir, "registry.json");
+        const registry = readJsonFile(registryFile, { packages: [] });
+        const pkgs = Array.isArray(registry?.packages) ? registry.packages : [];
+        const rec = pkgs.find((p) => p && p.id === packageId);
+        if (!rec) {
+          return sendJson(res, 404, {
+            ok: false,
+            error: "PACKAGE_NOT_REGISTERED",
+            packageId,
+          });
+        }
+        if (rec.enabled === false) {
+          return sendJson(res, 403, {
+            ok: false,
+            error: "PACKAGE_DISABLED",
+            packageId,
+          });
+        }
+        const entryAbs = rec.entryAbsPath;
+        if (!entryAbs || typeof entryAbs !== "string") {
+          return sendJson(res, 400, {
+            ok: false,
+            error: "NO_ENTRY",
+            packageId,
+          });
+        }
+        let realEntry;
+        try {
+          realEntry = fs.realpathSync(entryAbs);
+        } catch {
+          return sendJson(res, 404, {
+            ok: false,
+            error: "ENTRY_NOT_FOUND",
+            packageId,
+            entryAbsPath: entryAbs,
+          });
+        }
+        // Must stay under the registered package root (prevents registry tampering → arbitrary read).
+        let rootReal = rec.rootPath;
+        try {
+          if (rootReal && fs.existsSync(rootReal)) rootReal = fs.realpathSync(rootReal);
+        } catch {
+          /* keep */
+        }
+        if (
+          rootReal &&
+          realEntry !== rootReal &&
+          !realEntry.startsWith(rootReal + path.sep)
+        ) {
+          return sendJson(res, 403, {
+            ok: false,
+            error: "ENTRY_OUTSIDE_PACKAGE_ROOT",
+            packageId,
+          });
+        }
+        const maxBytes = 1_500_000;
+        const st = fs.statSync(realEntry);
+        if (!st.isFile()) {
+          return sendJson(res, 400, { ok: false, error: "ENTRY_NOT_FILE", packageId });
+        }
+        if (st.size > maxBytes) {
+          return sendJson(res, 413, {
+            ok: false,
+            error: "ENTRY_TOO_LARGE",
+            packageId,
+            size: st.size,
+            maxBytes,
+          });
+        }
+        const source = fs.readFileSync(realEntry, "utf8");
+        return sendJson(res, 200, {
+          ok: true,
+          packageId,
+          entryAbsPath: realEntry,
+          hash: rec.hash ?? null,
+          bytes: Buffer.byteLength(source, "utf8"),
+          source,
+        });
+      }
+
       if (req.method === "POST" && pathname === "/api/action") {
         const body = await readBody(req);
         const result = appendAction(dir, body);
@@ -276,7 +412,8 @@ export function createSessionMiddleware(sessionDir) {
  */
 export function startSessionApiServer(opts = {}) {
   const dir = resolveSessionDir(opts.sessionDir);
-  const middleware = createSessionMiddleware(dir);
+  const hostToken = opts.hostToken ?? ensureHostToken();
+  const middleware = createSessionMiddleware(dir, { hostToken });
   const port = opts.port ?? 0;
 
   return new Promise((resolve, reject) => {
@@ -293,6 +430,7 @@ export function startSessionApiServer(opts = {}) {
           server,
           port: typeof addr === "object" && addr ? addr.port : port,
           sessionDir: dir,
+          hostToken,
           close: () =>
             new Promise((r, j) => server.close((e) => (e ? j(e) : r()))),
         });

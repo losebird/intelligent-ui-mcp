@@ -17,6 +17,8 @@ export interface HttpPumpCurrentInfo {
 export interface HttpPumpOptions {
   /** Host 窗 origin，如 http://127.0.0.1:5173；空则用相对 /api */
   baseUrl?: string;
+  /** Host API shared secret (IUI_HOST_TOKEN); sent as Bearer + X-IUI-Host-Token */
+  token?: string;
   /** 轮询间隔 ms，默认 150（与 host-window 对齐） */
   pollMs?: number;
   /** 固定 session；省略则跟 /api/current */

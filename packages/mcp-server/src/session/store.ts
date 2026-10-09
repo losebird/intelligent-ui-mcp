@@ -454,7 +454,8 @@ export class SessionStore {
     if (refreshNote) warnings.push(refreshNote);
 
     if (session.status === "action_pending") this.clearActionTimer(session.sessionId);
-    const done = input.chunkDone !== false; // default: emit done after ops batch
+    // Progressive default: only explicit chunkDone:true finalizes (omit/false → partial).
+    const done = input.chunkDone === true;
     session.status = "streaming";
     session.tree = applied.tree;
     session.revision += 1;
@@ -477,6 +478,10 @@ export class SessionStore {
       this.emitDone(session, "completed");
       session.status = "idle";
       session.partial = false;
+    } else {
+      warnings.push(
+        "STREAMING_PARTIAL: chunkDone omitted/false — Host paints this shard; pass chunkDone:true to finalize",
+      );
     }
     this.persistSnapshot(session);
 

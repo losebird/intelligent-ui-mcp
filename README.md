@@ -85,7 +85,7 @@ Host HTTP（`/api/current`、`/api/snapshot|events|…`、`POST /api/action`）�
 2. Cursor / harness 连接 MCP
 3. 调用 `ui_open` → **默认自动** probe；未就绪则 spawn `npm run host` 并打开浏览器一键 URL（`openUrl`，含 `sessionId`+`token`）。也可手动：`npm run host` 后打开返回的 `openUrl` / `embedUrl`
 4. （可选）`register_package` 自定义包（**`strictHash` 默认 true**）→ Host 读 `registry.json`，经 `/api/package-entry`（再验 hash）+ iframe 沙箱加载
-5. `ui_propose`（tree 或 ops）出树 → 主区渲染控件
+5. `ui_propose`：**对比/表/列表默认 `mode=ops` 分片**（壳→表头→逐行，`chunkDone:true` 收尾）；极小表单才用 `mode=tree` → Host SSE 边画
 6. 点击 Button / 拖滑条 → Host 写 `{sessionId}.actions.ndjson`
 7. MCP **watch 入库**并广播 `ui.action`；harness 用 `ui_drain_actions` 取走 → `ui_patch` 更新衍生节点
 
@@ -100,6 +100,7 @@ npm run build
 npm run smoke         # MCP tree path → SMOKE_OK
 npm run host-smoke    # Host API + actions.ndjson → HOST_SMOKE_OK
 npm run stream-smoke  # ops / action / drain / chunks → STREAM_SMOKE_OK
+npm run stream-phone-compare  # 对比三款手机分片 + SSE/Host 渐进帧
 npm run sandbox-smoke # iframe 信任边界 + package-entry 鉴权 → SANDBOX_SMOKE_OK
 npm run custom-smoke  # register / hash / unregister / Gauge propose → CUSTOM_SMOKE_OK
 npm run policy-smoke  # lint / policy_check / expr / heuristic → POLICY_SMOKE_OK
@@ -130,7 +131,7 @@ npm run eval          # heuristic format table → evals/results/latest.md
 | `get_prompt_fragment` | 给模型的 UI 选用说明 |
 | `get_json_schema` | 拉 props / 树 schema |
 | `ui_open` | 开 session + 写旁路 + actions watch；**probe/自动 spawn Host + 开浏览器**；返回 `openUrl`/`hostHint`/`launchCmd` |
-| `ui_propose` | `tree` 整树 / `ops` 增量 / `streaming_chunks`（chunkDone 时整段 parse） |
+| `ui_propose` | **默认演示路径 `ops` 分片**；`tree` 仅极小单次；`streaming_chunks` JSONL 即画（遗留整段仍等 chunkDone） |
 | `ui_patch` | 局部 ops；`action_pending` → `idle` |
 | `ui_report_action` | 记账 + `ui.action`；`state.set` 写 state |
 | `ui_drain_actions` | 拉取未 ack 的 pending actions（默认标记 drained） |
@@ -255,7 +256,8 @@ npm run eval            # → evals/results/latest.md
 
 ## ③ 已知简化
 
-- `streaming_chunks`：**`mode=ops` + JSONL 行**在到达时即 apply（不必等 `chunkDone`）；非 JSONL 缓冲仍在 `chunkDone=true` 时整段 JSON.parse（树 / `{tree}` / `{ops}`）。不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
+- **边输出边画（P0）**：对比类必须 `mode=ops` 分片；`chunkDone` 省略/false → session `streaming`+`partial`，Host 已上屏；仅 `chunkDone:true` 完结。见 [`docs/AUDIT-P0-OPS-DEFAULT.md`](./docs/AUDIT-P0-OPS-DEFAULT.md)。
+- `streaming_chunks`：**JSONL 行**在到达时即 apply（不必等 `chunkDone`）；非 JSONL 缓冲仍在 `chunkDone=true` 时整段 JSON.parse（树 / `{tree}` / `{ops}`）。不做 partial JSON 流式抽出子节点。失败 → `ui.error` `PARSE_FAILED` recoverable，保留 partial。
 - `refresh`：可选字段；若传入仅记 warnings 别名，ops 照常应用。
 - `replace_tree`：作为 ops 便利算子（整树替换），与事件 `ui.replace` 并存。
 
@@ -268,7 +270,7 @@ npm run eval            # → evals/results/latest.md
 
 ## CI
 
-GitHub Actions（`.github/workflows/ci.yml`）：`npm ci` → `build` → `smoke` / `host-smoke` / `stream-smoke` / `custom-smoke` / `sandbox-smoke` / `eval:validate`。CI 注入 `IUI_HOST_TOKEN`。
+GitHub Actions（`.github/workflows/ci.yml`）：`npm ci` → `build` → `smoke` / `host-smoke` / `stream-smoke` / `stream-phone-compare` / `custom-smoke` / `sandbox-smoke` / `eval:validate`。CI 注入 `IUI_HOST_TOKEN`。
 
 ## License
 

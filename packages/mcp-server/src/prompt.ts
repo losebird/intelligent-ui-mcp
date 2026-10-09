@@ -1,7 +1,7 @@
 import type { CatalogRegistry } from "./catalog/registry.js";
 
 /** Versioned prompt rules for design judgment (G1 Phase A). Not OpenAI RL weights. */
-export const PROMPT_FRAGMENT_VERSION = "0.1.8-embed-p1";
+export const PROMPT_FRAGMENT_VERSION = "0.2.0-ops-default";
 
 export function buildPromptFragment(
   catalog: CatalogRegistry,
@@ -65,10 +65,19 @@ export function buildPromptFragment(
   lines.push("");
   lines.push("## Protocol rules");
   lines.push("1. Only use enabled ComponentTypes listed below.");
-  lines.push("2. Call `ui_open` then `ui_propose` (`mode=tree|ops|streaming_chunks`).");
+  lines.push(
+    zh
+      ? "2. 先 `ui_open`，再 `ui_propose`。**默认路径 = `mode=ops` 分片**（对比/表/列表强制）；`mode=tree` 仅极小单次表单；`streaming_chunks` = JSONL 逐行 ops。"
+      : "2. `ui_open` then `ui_propose`. **Default path = `mode=ops` shards** (mandatory for compare/table/list); `mode=tree` only for tiny one-shot forms; `streaming_chunks` = JSONL ops.",
+  );
   lines.push("3. Never emit executable HTML/JS; only registered component types.");
   lines.push("4. Optional: call `policy_check` before propose when unsure (if enabled).");
   lines.push(`5. Density preference: ${density}.`);
+  lines.push(
+    zh
+      ? "6. `chunkDone`：分片时必须 `false`；**最后一次**才 `true`。省略 = 继续 streaming（Host 已上屏）。"
+      : "6. `chunkDone`: false on shards; **true only on the last** call. Omit = keep streaming (Host already painted).",
+  );
   lines.push("");
   lines.push(zh ? "## 流式生成（P0 强制）" : "## Progressive streaming (P0 mandatory)");
   lines.push(
@@ -94,14 +103,14 @@ export function buildPromptFragment(
   if (density === "plain_prefer") {
     lines.push(
       zh
-        ? "6. 用户偏好 plain_prefer：除非 UI 明显有助于交互/对比/计算，否则用纯文字。"
-        : "6. User prefers plain_prefer: use plain text unless UI clearly helps interaction/compare/calc.",
+        ? "7. 用户偏好 plain_prefer：除非 UI 明显有助于交互/对比/计算，否则用纯文字。"
+        : "7. User prefers plain_prefer: use plain text unless UI clearly helps interaction/compare/calc.",
     );
   } else if (density === "compact") {
     lines.push(
       zh
-        ? "6. 用户偏好 compact：优先紧凑布局，少用大 Card/大图。"
-        : "6. User prefers compact: prefer tight layout; avoid oversized Cards/charts.",
+        ? "7. 用户偏好 compact：优先紧凑布局，少用大 Card/大图。"
+        : "7. User prefers compact: prefer tight layout; avoid oversized Cards/charts.",
     );
   }
   lines.push("");
@@ -126,41 +135,108 @@ export function buildPromptFragment(
 
   if (includeExamples) {
     lines.push("");
-    lines.push("## Example tree (tip calculator skeleton)");
+    lines.push(zh ? "## 示例（强制）：对比类 mode=ops 分片" : "## Example (mandatory): compare via mode=ops shards");
+    lines.push(
+      zh
+        ? "禁止先想完整树再一次 `mode=tree`。按序多次 `ui_propose`："
+        : "Do NOT build a full tree then one-shot `mode=tree`. Call `ui_propose` multiple times:",
+    );
     lines.push("```json");
     lines.push(
       JSON.stringify(
         {
-          id: "root",
-          type: "catalog.base/Stack",
-          props: { direction: "vertical", gap: 12 },
-          children: [
+          step: 1,
+          mode: "ops",
+          chunkDone: false,
+          ops: [
             {
-              id: "t1",
-              type: "catalog.base/Markdown",
-              props: { text: "## 账单分摊" },
-            },
-            {
-              id: "tip",
-              type: "catalog.shadcn/Slider",
-              props: { min: 0, max: 30, label: "小费 %", value: 15 },
-              bind: "tipPercent",
-            },
-            {
-              id: "total",
-              type: "catalog.shadcn/Badge",
-              props: { text: "—" },
-              expr: { text: "round(bill * (1 + tipPercent/100), 2)" },
-            },
-            {
-              id: "go",
-              type: "catalog.shadcn/Button",
-              props: { label: "确认分摊" },
-              actions: {
-                onClick: { actionType: "submit", payload: { intent: "confirm_split" } },
+              op: "replace_tree",
+              tree: {
+                id: "root",
+                type: "catalog.base/Stack",
+                props: { direction: "vertical", gap: 12 },
+                children: [
+                  {
+                    id: "title",
+                    type: "catalog.base/Markdown",
+                    props: { text: "## 对比三款手机\n生成中…" },
+                  },
+                ],
               },
             },
           ],
+        },
+        null,
+        2,
+      ),
+    );
+    lines.push("```");
+    lines.push("```json");
+    lines.push(
+      JSON.stringify(
+        {
+          step: 2,
+          mode: "ops",
+          chunkDone: false,
+          ops: [
+            {
+              op: "upsert",
+              parentId: "root",
+              nodeId: "phone_table",
+              node: {
+                id: "phone_table",
+                type: "catalog.shadcn/DataTable",
+                props: {
+                  caption: "旗舰对比",
+                  columns: [
+                    { id: "model", header: "机型" },
+                    { id: "chip", header: "芯片" },
+                    { id: "price", header: "价格" },
+                  ],
+                  rows: [],
+                },
+              },
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+    lines.push("```");
+    lines.push(
+      zh
+        ? "然后对 `phone_table` 多次 `patch_props` 追加 rows（每次 `chunkDone:false`），最后一次 `chunkDone:true`。"
+        : "Then `patch_props` on `phone_table` to grow rows (`chunkDone:false` each time), final call `chunkDone:true`.",
+    );
+    lines.push("");
+    lines.push(zh ? "## 示例（允许 tree）：极小表单" : "## Example (tree OK): tiny form");
+    lines.push("```json");
+    lines.push(
+      JSON.stringify(
+        {
+          mode: "tree",
+          tree: {
+            id: "root",
+            type: "catalog.base/Stack",
+            props: { direction: "vertical", gap: 12 },
+            children: [
+              {
+                id: "tip",
+                type: "catalog.shadcn/Slider",
+                props: { min: 0, max: 30, label: "小费 %", value: 15 },
+                bind: "tipPercent",
+              },
+              {
+                id: "go",
+                type: "catalog.shadcn/Button",
+                props: { label: "确认" },
+                actions: {
+                  onClick: { actionType: "submit", payload: { intent: "confirm" } },
+                },
+              },
+            ],
+          },
         },
         null,
         2,

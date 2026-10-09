@@ -39,6 +39,8 @@ export function UiRenderer(props: {
   extraRenderers?: Record<string, ComponentRenderer>;
   /** G10 density preference (Host chrome). */
   density?: "full" | "compact" | "plain_prefer";
+  /** Host chrome mode: "0" for bubble / bare embed. */
+  chrome?: string;
 }) {
   const merged: Record<string, ComponentRenderer> = {
     ...registry,
@@ -49,9 +51,11 @@ export function UiRenderer(props: {
     onAction: props.onAction,
   };
   const density = props.density ?? "full";
+  const chrome = props.chrome ?? "";
   const rootClass = [
     "iui-root",
     density !== "full" ? `iui-density-${density}` : "",
+    chrome === "0" || chrome === "bare" ? "iui-root-bubble" : "",
     props.className,
   ]
     .filter(Boolean)
@@ -113,13 +117,17 @@ export function UiRenderer(props: {
 
   if (!props.tree) {
     return (
-      <div className={rootClass}>
+      <div className={rootClass} data-iui-chrome={chrome || undefined}>
         <div className="iui-text-muted">等待 ui_open / ui_propose</div>
       </div>
     );
   }
 
-  return <div className={rootClass}>{renderNode(props.tree)}</div>;
+  return (
+    <div className={rootClass} data-iui-chrome={chrome || undefined}>
+      {renderNode(props.tree)}
+    </div>
+  );
 }
 
 export { registry as componentRegistry };

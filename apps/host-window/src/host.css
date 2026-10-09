@@ -1,23 +1,21 @@
 :root {
   color-scheme: light;
-  --host-bg: #eef2f7;
-  --host-bg-accent: radial-gradient(1200px 600px at 10% -10%, #dbeafe 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #e0e7ff 0%, transparent 50%),
-    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  --host-panel: rgba(255, 255, 255, 0.86);
+  --host-bg: #f7f7f8;
+  --host-bg-accent: none;
+  --host-panel: rgba(255, 255, 255, 0.92);
   --host-panel-solid: #ffffff;
-  --host-border: #e2e8f0;
-  --host-text: #0f172a;
-  --host-muted: #64748b;
-  --host-accent: #2563eb;
-  --host-danger: #b45309;
-  --host-error: #b91c1c;
-  --host-ok: #047857;
-  --host-radius: 12px;
-  --host-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
-  font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Noto Sans SC",
-    "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --host-border: rgba(13, 13, 13, 0.08);
+  --host-text: #0d0d0d;
+  --host-muted: #5d5d5d;
+  --host-accent: #0285ff;
+  --host-danger: #b54708;
+  --host-error: #e02e2e;
+  --host-ok: #0a7b4a;
+  --host-radius: 16px;
+  --host-shadow: 0 0 0 1px rgba(13, 13, 13, 0.06), 0 4px 16px rgba(13, 13, 13, 0.06);
+  font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Helvetica Neue", Arial,
+    sans-serif;
 }
 
 * {
@@ -385,6 +383,81 @@ body:has(.host-shell-embed) {
 }
 .host-embed-foot {
   display: none;
+}
+
+
+/* —— Bare / chrome=0：气泡全宽，无顶栏 —— ChatGPT inline card —— */
+.host-shell-bare {
+  grid-template-rows: 1fr;
+  min-height: 0;
+  height: auto;
+  background: transparent;
+  background-image: none;
+}
+html:has(.host-shell-bare),
+body:has(.host-shell-bare) {
+  background: transparent !important;
+  background-image: none !important;
+  margin: 0;
+  height: auto;
+  min-height: 0;
+}
+#root:has(.host-shell-bare) {
+  height: auto;
+  min-height: 0;
+  background: transparent;
+}
+.host-shell-bare .host-main {
+  padding: 14px;
+  min-height: 0;
+  overflow: visible;
+  display: block;
+}
+.host-shell-bare .host-canvas {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.host-shell-bare .host-empty {
+  margin: 8px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(13, 13, 13, 0.08);
+  background: #fff;
+}
+.host-shell-bare .host-banner-error {
+  margin: 0 0 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(224, 46, 46, 0.25);
+}
+.host-shell-bare .host-embed-foot {
+  display: none;
+}
+/* Soft streaming chip instead of full banner in bare */
+.host-shell-bare .host-banner-stream {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(13, 13, 13, 0.08);
+  background: #f9f9f9;
+  color: #5d5d5d;
+  font-weight: 500;
+  animation: none;
+}
+
+/* Embed (side panel) — still minimal but with soft card canvas */
+.host-shell-embed:not(.host-shell-bare) {
+  background: #fff;
+}
+.host-shell-embed:not(.host-shell-bare) .host-main {
+  padding: 12px 14px 16px;
+}
+.host-shell-embed:not(.host-shell-bare) .host-canvas {
+  width: 100%;
 }
 
 /* Custom package iframe sandbox */

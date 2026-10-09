@@ -60,3 +60,4 @@
 
 - [`AUDIT-P0-SANDBOX-CI.md`](./AUDIT-P0-SANDBOX-CI.md) — 自定义包 iframe 沙箱 + CI
 - [`AUDIT-P1-AUTO-HOST.md`](./AUDIT-P1-AUTO-HOST.md) — ui_open 自动拉起 Host + strictHash 默认
+- [`AUDIT-P0-OPS-DEFAULT.md`](./AUDIT-P0-OPS-DEFAULT.md) — P0 边输出边画默认

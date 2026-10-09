@@ -38,15 +38,28 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
   "catalog.shadcn/ButtonGroup": ({ node, ctx }) => {
     const options = (node.props?.options as Array<{ id: string; label: string }>) ?? [];
     const variant = (node.props?.variant as string) ?? "outline";
+    const segmented = Boolean(node.props?.segmented) || variant === "segmented";
+    const [active, setActive] = useState(String(node.props?.value ?? options[0]?.id ?? ""));
     return (
-      <div className="iui-btn-group" data-iui-id={node.id}>
+      <div
+        className={segmented ? "iui-btn-group iui-btn-group-segmented" : "iui-btn-group"}
+        data-iui-id={node.id}
+        role={segmented ? "tablist" : undefined}
+      >
         {options.map((o) => (
           <button
             key={o.id}
-            className={`iui-btn iui-btn-${variant} iui-btn-md`}
-            onClick={() =>
-              emit(ctx, node, "click", { payload: { optionId: o.id } })
+            type="button"
+            className={
+              segmented
+                ? `iui-btn iui-btn-sm${o.id === active ? " iui-btn-active" : ""}`
+                : `iui-btn iui-btn-${variant === "segmented" ? "outline" : variant} iui-btn-md`
             }
+            data-active={segmented && o.id === active ? "1" : undefined}
+            onClick={() => {
+              if (segmented) setActive(o.id);
+              emit(ctx, node, "click", { payload: { optionId: o.id } });
+            }}
           >
             {o.label}
           </button>
@@ -170,6 +183,7 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
             });
           }}
         />
+        <span className="iui-switch-track" aria-hidden="true" />
         {String(node.props?.label ?? "")}
       </label>
     );
@@ -279,50 +293,77 @@ export const shadcnRenderers: Record<string, ComponentRenderer> = {
       (node.props?.rows as Array<Record<string, string | number | boolean | null>>) ??
       [];
     return (
-      <table className="iui-table" data-iui-id={node.id}>
-        {node.props?.caption ? <caption>{String(node.props.caption)}</caption> : null}
-        <thead>
-          <tr>
-            {columns.map((c) => (
-              <th key={c.id} style={{ textAlign: (c.align as "left") ?? "left" }}>
-                {c.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
+      <div className="iui-table-wrap" data-iui-id={node.id}>
+        <table className="iui-table">
+          {node.props?.caption ? <caption>{String(node.props.caption)}</caption> : null}
+          <thead>
+            <tr>
               {columns.map((c) => (
-                <td key={c.id} style={{ textAlign: (c.align as "left") ?? "left" }}>
-                  {row[c.id] == null ? "" : String(row[c.id])}
-                </td>
+                <th key={c.id} style={{ textAlign: (c.align as "left") ?? "left" }}>
+                  {c.header}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={Math.max(columns.length, 1)} style={{ color: "var(--iui-muted)" }}>
+                  暂无数据
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, i) => (
+                <tr key={i}>
+                  {columns.map((c) => (
+                    <td key={c.id} style={{ textAlign: (c.align as "left") ?? "left" }}>
+                      {row[c.id] == null ? "" : String(row[c.id])}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     );
   },
 
-  "catalog.shadcn/Form": ({ node, ctx, renderChildren }) => (
-    <form
-      data-iui-id={node.id}
-      onSubmit={(e) => {
-        e.preventDefault();
-        emit(ctx, node, "submit", {
-          payload: { values: ctx.state },
-        });
-      }}
-    >
-      {renderChildren(node.children)}
-      <div style={{ marginTop: 12 }}>
-        <button className="iui-btn iui-btn-default iui-btn-md" type="submit">
-          {String(node.props?.submitLabel ?? "提交")}
-        </button>
-      </div>
-    </form>
-  ),
+  "catalog.shadcn/Form": ({ node, ctx, renderChildren }) => {
+    const submitLabel = String(node.props?.submitLabel ?? "提交");
+    const cancelLabel = node.props?.cancelLabel
+      ? String(node.props.cancelLabel)
+      : "";
+    const dual = Boolean(cancelLabel);
+    return (
+      <form
+        className="iui-form"
+        data-iui-id={node.id}
+        onSubmit={(e) => {
+          e.preventDefault();
+          emit(ctx, node, "submit", {
+            payload: { values: ctx.state },
+          });
+        }}
+      >
+        {renderChildren(node.children)}
+        <div className={dual ? "iui-form-actions iui-form-actions-2" : "iui-form-actions"}>
+          {dual ? (
+            <button
+              className="iui-btn iui-btn-secondary iui-btn-md iui-btn-block"
+              type="button"
+              onClick={() => emit(ctx, node, "cancel")}
+            >
+              {cancelLabel}
+            </button>
+          ) : null}
+          <button className="iui-btn iui-btn-default iui-btn-md iui-btn-block" type="submit">
+            {submitLabel}
+          </button>
+        </div>
+      </form>
+    );
+  },
 
   "catalog.shadcn/AlertDialog": ({ node, ctx }) => {
     if (node.props?.open === false) return null;

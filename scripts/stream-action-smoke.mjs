@@ -177,6 +177,7 @@ async function main() {
       arguments: {
         sessionId,
         mode: "ops",
+        chunkDone: true,
         ops: [
           {
             op: "upsert",

@@ -227,74 +227,119 @@ export function App() {
     </div>
   );
 
-  return (
-    <div className={mode.embed ? "host-shell host-shell-embed" : "host-shell"}>
-      <header className={mode.embed ? "host-top host-top-embed" : "host-top"}>
-        {!mode.embed ? (
-          <div className="host-brand">Intelligent UI Host</div>
-        ) : (
-          <div className="host-brand host-brand-embed" title="Intelligent UI (embed)">
-            IUI
-          </div>
-        )}
-        <div className="host-meta">
-          <span title="sessionId">
-            <em>session</em> {displaySessionId ?? "—"}
-          </span>
-          <span title="revision">
-            <em>rev</em> {displayRevision ?? "—"}
-          </span>
-          <span title="status" className={`host-status host-status-${statusLabel}`}>
-            <em>status</em> {statusLabel}
-          </span>
-          <span title="event transport" className="host-transport">
-            <em>xfer</em> {transport}
-          </span>
-          {mirror?.title ? (
-            <span title="title">
-              <em>title</em> {mirror.title}
-            </span>
-          ) : null}
-          {mode.embed ? (
-            <span title="embed mode" className="host-embed-badge">
-              <em>view</em> embed
-            </span>
-          ) : null}
-        </div>
-        {!mode.embed ? (
-          <div className="host-actions">
-            <button
-              type="button"
-              className="host-btn"
-              onClick={copySessionDir}
-              title={sessionDir}
-            >
-              {copied ? "已复制路径" : "复制 session 目录"}
-            </button>
-            <label
-              className="host-density"
-              title="G10: Host density; harness should also pass density to get_prompt_fragment / ui_open"
-            >
-              <em>density</em>{" "}
-              <select
-                value={densityOverride}
-                onChange={(e) =>
-                  onDensityChange(
-                    e.target.value as "full" | "compact" | "plain_prefer" | "session",
-                  )
-                }
-              >
-                <option value="session">session ({sessionDensity})</option>
-                <option value="full">full</option>
-                <option value="compact">compact</option>
-                <option value="plain_prefer">plain_prefer</option>
-              </select>
-            </label>
-          </div>
-        ) : null}
-      </header>
 
-      {!mode.embed && sessionDir ? (
+  /* Bubble iframe auto-height: report content size to parent (dsh plugin). */
+  useEffect(() => {
+    if (!mode.bare && !mode.embed) return;
+    const report = () => {
+      const h = Math.ceil(
+        Math.max(
+          document.documentElement?.scrollHeight ?? 0,
+          document.body?.scrollHeight ?? 0,
+          document.getElementById("root")?.scrollHeight ?? 0,
+        ),
+      );
+      if (!h || h < 40) return;
+      try {
+        window.parent?.postMessage(
+          { source: "intelligent-ui-host", type: "iui.resize", height: h },
+          "*",
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+    report();
+    const ro = new ResizeObserver(() => report());
+    const root = document.getElementById("root") || document.body;
+    if (root) ro.observe(root);
+    const t = window.setInterval(report, 800);
+    window.addEventListener("load", report);
+    return () => {
+      ro.disconnect();
+      window.clearInterval(t);
+      window.removeEventListener("load", report);
+    };
+  }, [mode.bare, mode.embed, activeSessionId, mirror?.revision, mirror?.status]);
+
+  const shellClass = [
+    "host-shell",
+    mode.embed ? "host-shell-embed" : "",
+    mode.bare ? "host-shell-bare" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className={shellClass}>
+      {!mode.bare ? (
+        <header className={mode.embed ? "host-top host-top-embed" : "host-top"}>
+          {!mode.embed ? (
+            <div className="host-brand">Intelligent UI Host</div>
+          ) : (
+            <div className="host-brand host-brand-embed" title="Intelligent UI (embed)">
+              IUI
+            </div>
+          )}
+          <div className="host-meta">
+            <span title="sessionId">
+              <em>session</em> {displaySessionId ?? "—"}
+            </span>
+            <span title="revision">
+              <em>rev</em> {displayRevision ?? "—"}
+            </span>
+            <span title="status" className={`host-status host-status-${statusLabel}`}>
+              <em>status</em> {statusLabel}
+            </span>
+            <span title="event transport" className="host-transport">
+              <em>xfer</em> {transport}
+            </span>
+            {mirror?.title ? (
+              <span title="title">
+                <em>title</em> {mirror.title}
+              </span>
+            ) : null}
+            {mode.embed ? (
+              <span title="embed mode" className="host-embed-badge">
+                <em>view</em> embed
+              </span>
+            ) : null}
+          </div>
+          {!mode.embed ? (
+            <div className="host-actions">
+              <button
+                type="button"
+                className="host-btn"
+                onClick={copySessionDir}
+                title={sessionDir}
+              >
+                {copied ? "已复制路径" : "复制 session 目录"}
+              </button>
+              <label
+                className="host-density"
+                title="G10: Host density; harness should also pass density to get_prompt_fragment / ui_open"
+              >
+                <em>density</em>{" "}
+                <select
+                  value={densityOverride}
+                  onChange={(e) =>
+                    onDensityChange(
+                      e.target.value as "full" | "compact" | "plain_prefer" | "session",
+                    )
+                  }
+                >
+                  <option value="session">session ({sessionDensity})</option>
+                  <option value="full">full</option>
+                  <option value="compact">compact</option>
+                  <option value="plain_prefer">plain_prefer</option>
+                </select>
+              </label>
+            </div>
+          ) : null}
+        </header>
+      ) : null}
+
+      {!mode.embed && !mode.bare && sessionDir ? (
         <div className="host-path" title={sessionDir}>
           IUI_SESSION_DIR: {sessionDir}
         </div>
@@ -305,13 +350,13 @@ export function App() {
           事件通道失败（将自动重试 / 回退轮询）：{pollError}
         </div>
       ) : null}
-      {packageBanner ? (
+      {!mode.bare && packageBanner ? (
         <div className="host-banner-warn" title={packageBanner}>
           自定义包降级：{packageBanner}
         </div>
       ) : null}
 
-      {isStreaming && activeSessionId ? (
+      {!mode.bare && isStreaming && activeSessionId ? (
         <div className="host-banner-stream" role="status">
           生成中… 流式增量已上屏（rev {displayRevision ?? "—"}）
         </div>
@@ -328,6 +373,7 @@ export function App() {
               showStreamingChrome={false}
               showErrorChrome={Boolean(mirror?.lastError)}
               emptyPlaceholder={emptyPlaceholder}
+              chromeMode={mode.bare ? "0" : mode.embed ? "embed" : "full"}
             />
           ) : (
             emptyPlaceholder

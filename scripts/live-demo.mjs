@@ -3,7 +3,7 @@
  * True MCP live demo (stdio → real mcp-server), NOT a hand-written snapshot.
  *
  * 1) Spawn packages/mcp-server/dist/index.js over MCP stdio
- * 2) ui_open → ui_propose (tip calculator + LineChart)
+ * 2) ui_open → progressive mode=ops shards (shell → card → chart → done)
  * 3) Assert NDJSON / snapshot / current were written by the server
  * 4) POST /api/action via session API (same path Host uses) → actions.ndjson
  * 5) Optionally leave files in $HOME/.intelligent-ui-mcp/live-demo for Host
@@ -89,99 +89,6 @@ async function main() {
   console.log("sessionId:", sessionId);
   console.log("eventsPath (from MCP):", opened.eventsPath);
 
-  const tree = {
-    id: "root",
-    type: "catalog.base/Stack",
-    props: { direction: "vertical", gap: 18 },
-    children: [
-      {
-        id: "title",
-        type: "catalog.base/Markdown",
-        props: {
-          text: "## Intelligent UI 演示\n真 MCP stdio `ui_propose` 写出 · 小费计算器 + 折线图",
-        },
-      },
-      {
-        id: "card",
-        type: "catalog.shadcn/Card",
-        props: {
-          title: "小费计算器",
-          description: "调整账单、小费比例与人数，预览人均分摊。",
-        },
-        children: [
-          {
-            id: "bill",
-            type: "catalog.shadcn/Input",
-            props: { label: "账单金额（¥）", value: "120", inputType: "number" },
-            bind: "bill",
-          },
-          {
-            id: "tip",
-            type: "catalog.shadcn/Slider",
-            props: { label: "小费比例 %", min: 0, max: 30, step: 1, value: 15 },
-            bind: "tipPercent",
-          },
-          {
-            id: "people",
-            type: "catalog.shadcn/Input",
-            props: { label: "用餐人数", value: "3", inputType: "number" },
-            bind: "people",
-          },
-          {
-            id: "total",
-            type: "catalog.shadcn/Badge",
-            props: { text: "人均约 ¥46.00（含小费）", variant: "default" },
-          },
-          {
-            id: "actions",
-            type: "catalog.base/Stack",
-            props: { direction: "horizontal", gap: 10 },
-            children: [
-              {
-                id: "yes",
-                type: "catalog.shadcn/Button",
-                props: { label: "满意", variant: "default" },
-                actions: {
-                  onClick: {
-                    actionType: "submit",
-                    payload: { intent: "satisfied" },
-                  },
-                },
-              },
-              {
-                id: "go",
-                type: "catalog.shadcn/Button",
-                props: { label: "重新计算", variant: "outline" },
-                actions: {
-                  onClick: {
-                    actionType: "click",
-                    payload: { intent: "recalc" },
-                  },
-                },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "chart",
-        type: "catalog.charts/LineChart",
-        props: {
-          title: "Q1–Q4 营收示意",
-          height: 220,
-          data: [
-            { x: "Q1", y: 42 },
-            { x: "Q2", y: 55 },
-            { x: "Q3", y: 48 },
-            { x: "Q4", y: 70 },
-          ],
-          xKey: "x",
-          yKey: "y",
-        },
-      },
-    ],
-  };
-
   // Ensure charts package is enabled for LineChart
   await client.callTool({
     name: "set_enabled_packages",
@@ -190,14 +97,152 @@ async function main() {
     },
   });
 
-  const proposed = parseToolJson(
-    await client.callTool({
-      name: "ui_propose",
-      arguments: { sessionId, mode: "tree", tree },
-    }),
+  async function proposeOps(ops, chunkDone) {
+    const r = parseToolJson(
+      await client.callTool({
+        name: "ui_propose",
+        arguments: { sessionId, mode: "ops", chunkDone, ops },
+      }),
+    );
+    assert(r.ok, "ui_propose ops failed: " + JSON.stringify(r));
+    return r;
+  }
+
+  // Progressive default demo: shell → card controls → chart → finalize
+  const shell = await proposeOps(
+    [
+      {
+        op: "replace_tree",
+        tree: {
+          id: "root",
+          type: "catalog.base/Stack",
+          props: { direction: "vertical", gap: 18 },
+          children: [
+            {
+              id: "title",
+              type: "catalog.base/Markdown",
+              props: {
+                text: "## Your tip split\nGenerating…",
+              },
+            },
+          ],
+        },
+      },
+    ],
+    false,
   );
-  assert(proposed.ok, "ui_propose failed: " + JSON.stringify(proposed));
-  console.log("propose revision:", proposed.revision, "decision:", proposed.decision);
+  assert(shell.status === "streaming", "shell should be streaming");
+  console.log("frame shell rev=", shell.revision);
+
+  const card = await proposeOps(
+    [
+      {
+        op: "upsert",
+        parentId: "root",
+        nodeId: "card",
+        node: {
+          id: "card",
+          type: "catalog.shadcn/Card",
+          props: {
+            title: "Tip calculator",
+            description: "Progressive ops paint — not a one-shot tree.",
+          },
+          children: [
+            {
+              id: "bill",
+              type: "catalog.shadcn/Input",
+              props: { label: "Bill (¥)", value: "120", inputType: "number" },
+              bind: "bill",
+            },
+            {
+              id: "tip",
+              type: "catalog.shadcn/Slider",
+              props: { label: "Tip %", min: 0, max: 30, step: 1, value: 15 },
+              bind: "tipPercent",
+            },
+            {
+              id: "people",
+              type: "catalog.shadcn/Input",
+              props: { label: "Guests", value: "3", inputType: "number" },
+              bind: "people",
+            },
+            {
+              id: "total",
+              type: "catalog.shadcn/Badge",
+              props: { text: "~¥46.00 / person incl. tip", variant: "default" },
+            },
+            {
+              id: "actions",
+              type: "catalog.base/Stack",
+              props: { direction: "horizontal", gap: 10 },
+              children: [
+                {
+                  id: "yes",
+                  type: "catalog.shadcn/Button",
+                  props: { label: "Looks good", variant: "default" },
+                  actions: {
+                    onClick: {
+                      actionType: "submit",
+                      payload: { intent: "satisfied" },
+                    },
+                  },
+                },
+                {
+                  id: "go",
+                  type: "catalog.shadcn/Button",
+                  props: { label: "Recalculate", variant: "secondary" },
+                  actions: {
+                    onClick: {
+                      actionType: "click",
+                      payload: { intent: "recalc" },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+    false,
+  );
+  console.log("frame card rev=", card.revision);
+
+  const chart = await proposeOps(
+    [
+      {
+        op: "upsert",
+        parentId: "root",
+        nodeId: "chart",
+        node: {
+          id: "chart",
+          type: "catalog.charts/LineChart",
+          props: {
+            title: "Revenue · Q1–Q4",
+            height: 220,
+            data: [
+              { x: "Q1", y: 42 },
+              { x: "Q2", y: 55 },
+              { x: "Q3", y: 48 },
+              { x: "Q4", y: 70 },
+            ],
+            xKey: "x",
+            yKey: "y",
+          },
+        },
+      },
+      {
+        op: "patch_props",
+        nodeId: "title",
+        props: {
+          text: "## Your tip split\nAdjust the bill, tip, and party size — totals update live.",
+        },
+      },
+    ],
+    true,
+  );
+  assert(chart.status === "idle", "final shard should idle");
+  console.log("propose revision:", chart.revision, "decision:", chart.decision);
 
   const eventsFile = path.join(sessionDir, `${sessionId}.ndjson`);
   const snapshotFile = path.join(sessionDir, `${sessionId}.snapshot.json`);
@@ -224,10 +269,8 @@ async function main() {
     .map((l) => JSON.parse(l).type);
   console.log("events:", eventTypes.join(" → "));
   assert(eventTypes.includes("ui.open"), "missing ui.open");
-  assert(
-    eventTypes.includes("ui.replace") || eventTypes.includes("ui.done"),
-    "missing ui.replace/ui.done",
-  );
+  assert(eventTypes.filter((x) => x === "ui.delta").length >= 3, "expected ≥3 ui.delta from ops shards");
+  assert(eventTypes.includes("ui.done"), "missing ui.done");
 
   const current = JSON.parse(fs.readFileSync(currentFile, "utf8"));
   assert(current.latestSessionId === sessionId, "current.json not pointing at session");
@@ -295,7 +338,7 @@ async function main() {
       {
         sessionDir,
         sessionId,
-        revision: proposed.revision,
+        revision: chart.revision,
         eventsFile,
         snapshotFile,
         currentFile,

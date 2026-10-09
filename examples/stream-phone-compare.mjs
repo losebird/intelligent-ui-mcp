@@ -18,6 +18,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomBytes } from "node:crypto";
+import { startSessionApiServer } from "../apps/host-window/server/sessionApi.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -113,7 +115,12 @@ async function main() {
   const transport = new StdioClientTransport({
     command: "node",
     args: [serverEntry],
-    env: { ...process.env, IUI_SESSION_DIR: sessionDir },
+    env: {
+      ...process.env,
+      IUI_SESSION_DIR: sessionDir,
+      IUI_AUTO_HOST: "0",
+      IUI_AUTO_OPEN_BROWSER: "0",
+    },
   });
   const client = new Client({ name: "iui-phone-compare", version: "0.1.0" });
   await client.connect(transport);
@@ -294,6 +301,197 @@ async function main() {
   const deltas = events.filter((e) => e.type === "ui.delta");
   assert(deltas.length >= 5, `expected ≥5 ui.delta, got ${deltas.length}`);
   console.log(`ops path: ${deltas.length} ui.delta events, frames=${frames.length}`);
+
+  // --- Part A2: Host SSE + HTTP snapshot prove shards are Host-visible ---
+  {
+    const hostToken = `phone_sse_${randomBytes(8).toString("hex")}`;
+    const api = await startSessionApiServer({ sessionDir, port: 0, hostToken });
+    const openedSse = parseToolJson(
+      await client.callTool({
+        name: "ui_open",
+        arguments: { title: "SSE progressive paint", density: "full" },
+      }),
+    );
+    assert(openedSse.ok, "ui_open sse session failed");
+    const sidSse = openedSse.sessionId;
+
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 20000);
+    const res = await fetch(
+      `http://127.0.0.1:${api.port}/api/stream?sessionId=${encodeURIComponent(sidSse)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${hostToken}`,
+          "X-IUI-Host-Token": hostToken,
+          Accept: "text/event-stream",
+        },
+        signal: ac.signal,
+      },
+    );
+    assert(res.ok, `SSE status ${res.status}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    const sseDeltaRevs = [];
+
+    const pumpSse = (async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let sep;
+        while ((sep = buf.indexOf("\n\n")) >= 0) {
+          const frame = buf.slice(0, sep);
+          buf = buf.slice(sep + 2);
+          let event = "message";
+          const dataLines = [];
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
+          }
+          if (!dataLines.length) continue;
+          let data;
+          try {
+            data = JSON.parse(dataLines.join("\n"));
+          } catch {
+            continue;
+          }
+          if (event === "ui" && data?.type === "ui.delta" && typeof data.revision === "number") {
+            sseDeltaRevs.push(data.revision);
+          }
+        }
+      }
+    })();
+
+    async function hostSnapshotRows() {
+      const r = await fetch(
+        `http://127.0.0.1:${api.port}/api/snapshot/${encodeURIComponent(sidSse)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${hostToken}`,
+            "X-IUI-Host-Token": hostToken,
+          },
+        },
+      );
+      assert(r.ok, `snapshot HTTP ${r.status}`);
+      const body = await r.json();
+      assert(body.ok && body.snapshot, "snapshot body missing");
+      return {
+        revision: body.snapshot.revision,
+        partial: body.snapshot.partial,
+        rows: rowCount(body.snapshot),
+      };
+    }
+
+    const httpFrames = [];
+
+    await client.callTool({
+      name: "ui_propose",
+      arguments: {
+        sessionId: sidSse,
+        mode: "ops",
+        chunkDone: false,
+        ops: [
+          {
+            op: "replace_tree",
+            tree: {
+              id: "root",
+              type: "catalog.base/Stack",
+              props: { direction: "vertical", gap: 8 },
+              children: [
+                {
+                  id: "title",
+                  type: "catalog.base/Markdown",
+                  props: { text: "## SSE phone compare\n…" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    await new Promise((r) => setTimeout(r, 50));
+    httpFrames.push({ step: "shell", ...(await hostSnapshotRows()) });
+
+    await client.callTool({
+      name: "ui_propose",
+      arguments: {
+        sessionId: sidSse,
+        mode: "ops",
+        chunkDone: false,
+        ops: [
+          {
+            op: "upsert",
+            parentId: "root",
+            nodeId: "phone_table",
+            node: {
+              id: "phone_table",
+              type: "catalog.shadcn/DataTable",
+              props: { columns: COLUMNS, rows: [] },
+            },
+          },
+        ],
+      },
+    });
+    await new Promise((r) => setTimeout(r, 50));
+    httpFrames.push({ step: "headers", ...(await hostSnapshotRows()) });
+    assert(httpFrames.at(-1).rows === 0, "headers must paint 0 rows");
+    assert(httpFrames.at(-1).partial === true, "headers still partial");
+
+    for (let i = 0; i < PHONES.length; i++) {
+      const done = i === PHONES.length - 1;
+      await client.callTool({
+        name: "ui_propose",
+        arguments: {
+          sessionId: sidSse,
+          mode: "ops",
+          chunkDone: done,
+          ops: [
+            {
+              op: "patch_props",
+              nodeId: "phone_table",
+              props: { rows: PHONES.slice(0, i + 1) },
+            },
+          ],
+        },
+      });
+      await new Promise((r) => setTimeout(r, 50));
+      httpFrames.push({ step: `row_${i + 1}`, ...(await hostSnapshotRows()) });
+      assert(
+        httpFrames.at(-1).rows === i + 1,
+        `Host snapshot rows want ${i + 1} got ${httpFrames.at(-1).rows}`,
+      );
+    }
+    assert(httpFrames.at(-1).partial === false, "final Host snapshot not partial");
+
+    await new Promise((r) => setTimeout(r, 300));
+    clearTimeout(timer);
+    ac.abort();
+    try {
+      await reader.cancel();
+    } catch {
+      /* ignore */
+    }
+    try {
+      await pumpSse;
+    } catch {
+      /* abort */
+    }
+
+    const uniqueDeltaRevs = [...new Set(sseDeltaRevs)].sort((a, b) => a - b);
+    assert(
+      uniqueDeltaRevs.length >= 4,
+      `SSE ui.delta should cover ≥4 revisions, got ${uniqueDeltaRevs.join(",")}`,
+    );
+    for (let i = 1; i < httpFrames.length; i++) {
+      assert(
+        httpFrames[i].revision > httpFrames[i - 1].revision,
+        `Host revision must grow: ${JSON.stringify(httpFrames)}`,
+      );
+    }
+    console.log("SSE+Host progressive OK:", { uniqueDeltaRevs, httpFrames });
+    await api.close();
+  }
 
   // --- Part B: streaming_chunks JSONL progressive apply ---
   const opened2 = parseToolJson(

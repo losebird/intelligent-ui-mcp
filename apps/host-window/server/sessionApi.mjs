@@ -16,6 +16,7 @@ import {
   isPublicApiPath,
   tokensEqual,
 } from "./hostAuth.mjs";
+import { attachSessionSse } from "./sseStream.mjs";
 
 export {
   resolveHostToken,
@@ -234,6 +235,8 @@ export function createSessionMiddleware(sessionDir, opts = {}) {
           ok: true,
           sessionDir: dir,
           auth: "required-except-health",
+          sse: true,
+          ssePath: "/api/stream",
         });
       }
 
@@ -244,6 +247,45 @@ export function createSessionMiddleware(sessionDir, opts = {}) {
           iuiSessionDirEnv: process.env.IUI_SESSION_DIR ?? null,
           authRequired: true,
         });
+      }
+
+      // SSE push (preferred over short-poll). Auth + CORS already applied.
+      if (req.method === "GET" && (pathname === "/api/stream" || pathname === "/api/events")) {
+        const accept = String(req.headers.accept ?? "");
+        // /api/events without :sessionId is SSE; /api/events/:id stays JSON below.
+        // Allow explicit ?format=sse or Accept: text/event-stream; /api/stream always SSE.
+        const wantSse =
+          pathname === "/api/stream" ||
+          url.searchParams.get("format") === "sse" ||
+          accept.includes("text/event-stream");
+        if (pathname === "/api/events" && !wantSse) {
+          return sendJson(res, 400, {
+            ok: false,
+            error: "USE_SSE_OR_SESSION",
+            message:
+              "GET /api/events is SSE (Accept: text/event-stream or ?format=sse). For JSON poll use GET /api/events/:sessionId?since=",
+          });
+        }
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        if (typeof res.flushHeaders === "function") {
+          try {
+            res.flushHeaders();
+          } catch {
+            /* ignore */
+          }
+        }
+        attachSessionSse(res, {
+          sessionDir: dir,
+          pinnedSessionId: url.searchParams.get("sessionId"),
+          eventsSince: Number(url.searchParams.get("since") ?? "0") || 0,
+          includeSnapshot: url.searchParams.get("snapshot") !== "0",
+          includeActions: url.searchParams.get("actions") !== "0",
+        });
+        return;
       }
 
       if (req.method === "GET" && pathname === "/api/packages") {

@@ -65,3 +65,25 @@ export interface NdjsonPumpOptions {
   sessionId: string;
   pollMs?: number;
 }
+
+/** Transport reported by createHostEventPump / createSseEventPump */
+export type HostPumpTransport =
+  | "sse"
+  | "sse_reconnect"
+  | "poll"
+  | "poll_fallback";
+
+export interface SsePumpOptions extends HttpPumpOptions {
+  /** SSE path, default `/api/stream` */
+  ssePath?: string;
+  /** Initial events NDJSON offset (passed as ?since=) */
+  eventsSince?: number;
+  /** Prefer SSE then fall back to poll (createHostEventPump). Default true. */
+  preferSse?: boolean;
+  /** Consecutive SSE failures before falling back to poll. Default 3. */
+  sseFallbackAfter?: number;
+  /** createSseEventPump: failures before onPollError. Default stickyFails. */
+  maxReconnectsBeforeError?: number;
+  /** Fired when transport changes (sse / poll / fallback). */
+  onTransport?: (transport: HostPumpTransport) => void;
+}

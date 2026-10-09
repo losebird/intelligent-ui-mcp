@@ -90,8 +90,8 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 | 项 | 路径 |
 |----|------|
 | Host 窗 | `apps/host-window`（Vite + React；**M1 经 `@intelligent-ui/host-adapter`**） |
-| Session API | `apps/host-window/server/sessionApi.mjs`（`/api/current` `/api/snapshot/:id` `/api/events/:id` `POST /api/action`） |
-| 客户端泵 | `createHttpEventPump` + `HostSurfaceView`（见 `packages/host-adapter`） |
+| Session API | `apps/host-window/server/sessionApi.mjs`（`/api/stream` SSE；`/api/current` `/api/snapshot/:id` `/api/events/:id` 轮询回退；`POST /api/action`） |
+| 客户端泵 | `createHostEventPump`（SSE 优先 → HTTP 轮询回退）+ `HostSurfaceView` |
 | Action 旁路 | `{IUI_SESSION_DIR}/{sessionId}.actions.ndjson`（方案 C，actionId 幂等：解析 NDJSON + 内存 Set） |
 | 鉴权 | `IUI_HOST_TOKEN` / `~/.intelligent-ui-mcp/host-token`；除 `GET /api/health` 外均需 Bearer / `X-IUI-Host-Token` |
 | CORS | 仅 loopback Origin；不反射任意 Origin |
@@ -111,11 +111,19 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 | 层 | 路径 | 职责 |
 |----|------|------|
 | Surface | `@intelligent-ui/host-adapter` `createIntelligentUiHostSurface` | 本地镜像 + `applyEvent` / `setSnapshot` |
-| 泵 | `createHttpEventPump` | 轮询 Host HTTP；`onCurrent` / `onEvent` / sticky `onPollError` |
+| 泵 | `createHostEventPump` | **SSE** `/api/stream` 优先；失败回退 `createHttpEventPump`；`onTransport` / sticky `onPollError` |
 | 画布 | `HostSurfaceView` | 包 `UiRenderer`；点击 → `surface.onAction` → `POST /api/action`（`api.ts`） |
 | API 服务 | `server/sessionApi.mjs` + `hostAuth.mjs` | NDJSON / snapshot / actions 旁路 + **token 鉴权** + 严格 CORS |
 
 契约见 [`HOST-RENDERER-ADAPTER.md`](./HOST-RENDERER-ADAPTER.md)；验收勾选 [`HOST-ADAPTER-M0-CHECKLIST.md`](./HOST-ADAPTER-M0-CHECKLIST.md) §M1-host-wire。
+
+## SSE 推送（P1-a）
+
+- **主路径**：`GET /api/stream`（`text/event-stream`）；鉴权同其它 `/api/*`。
+- **事件**：`ready` / `current` / `session` / `snapshot` / `ui` / `action` / `ping`。
+- **等价入口**：`GET /api/events?format=sse` 或 `Accept: text/event-stream`（无 `:sessionId`）。
+- **回退**：`GET /api/events/:sessionId?since=` JSON 短轮询仍可用；客户端 `createHostEventPump` 在 SSE 连续失败后自动切回。
+- 详见 [`AUDIT-P1-SSE.md`](./AUDIT-P1-SSE.md)。
 
 ## 轮询韧性（Host client）
 

@@ -103,7 +103,7 @@ sp.set("root = Stack([header])\nheader = CardHeader(\"Hello\")\n");
 | `streaming_chunks` 名不副实 | **仅 `chunkDone` 时 `JSON.parse`**；未 done 只 buffer，**Host 无增量树** | `packages/mcp-server/src/session/store.ts` `proposeChunks`；README「③ 已知简化」 |
 | UI 不在聊天里 | Host 刻意解耦（stdio 占用）；文档已写「不是 Cursor 气泡插件」 | `docs/HOST-WINDOW.md` |
 | 更钝 | 执行子 agent **桌面截图 / 硬刷新**进关键路径 | 父对话联调记录 |
-| 轮询上限 | 文件旁路 + 150ms poll；无 SSE/WS 推送 | `HOST-WINDOW.md` 可选 socket「② 可不实现」——至今仍可选 |
+| 轮询上限 | ~~文件旁路 + 150ms poll；无 SSE~~ → **Host SSE `/api/stream` 已落地**；JSON 轮询仅回退 | `AUDIT-P1-SSE.md`；WS 仍未做 |
 | 空表误伤 | props 字段别名等（已修）会放大「慢+坏」印象 | 联调 rev1→rev2 |
 
 **结论**：G3 勾选「流式已落地」指的是 **协议与 smoke**；对 Ace 说的「不像 OpenAI」指的是 **端到端 progressive paint + 同框**。两者不矛盾——缺口在 **harness 用法 + Host 呈现面 + chunks 语义**。
@@ -126,7 +126,7 @@ sp.set("root = Stack([header])\nheader = CardHeader(\"Hello\")\n");
 
 | ID | 动作 | 说明 |
 |----|------|------|
-| **P1-a** | Host **WebSocket/SSE 推送**（`HOST-WINDOW` 原 optional B） | 去掉 150ms 轮询上限与 Failed to fetch 脆弱感 |
+| **P1-a** | Host **SSE 推送** ✅（`/api/stream`；失败回退轮询） | WS 仍可选；见 `AUDIT-P1-SSE.md` |
 | **P1-b** | **同屏共址**：Cursor 简单浏览器面板 / 本地 `iframe` 嵌同一 `renderer-react`（仍非原生气泡） | 对齐 OpenGenerativeUI「在对话旁看见」 |
 | **P1-c** | 借鉴 OpenUI：**JSONL ops 流**（一行一个 upsert）或可选 OpenUI Lang 适配器 | 避开「整段 JSON 未闭合无法 parse」 |
 | **P1-d** | Placeholder / skeleton 组件进 `catalog.base` | 对标 OGUI `placeholderMessages` + initialHeight |

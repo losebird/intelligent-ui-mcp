@@ -7,6 +7,7 @@
  * 4) POST action → actions.ndjson (idempotent on actionId)
  * 5) unauthenticated reads/writes → 401
  * 6) CORS: disallowed Origin → 403
+ * 7) SSE GET /api/stream: auth + ready/current/snapshot/ui + live push
  */
 import fs from "node:fs";
 import os from "node:os";
@@ -33,6 +34,69 @@ function authHeaders(token, extra = {}) {
     "X-IUI-Host-Token": token,
   };
 }
+
+async function readSseUntil(url, headers, pred, timeoutMs = 4000) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  const res = await fetch(url, {
+    headers: { ...headers, Accept: "text/event-stream" },
+    signal: ac.signal,
+  });
+  if (!res.ok) {
+    clearTimeout(timer);
+    throw new Error(`SSE HTTP ${res.status}`);
+  }
+  assert(
+    String(res.headers.get("content-type") || "").includes("text/event-stream"),
+    "content-type text/event-stream",
+  );
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  const events = [];
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let sep;
+      while ((sep = buf.indexOf("\n\n")) >= 0) {
+        const frame = buf.slice(0, sep);
+        buf = buf.slice(sep + 2);
+        let event = "message";
+        const dataLines = [];
+        for (const line of frame.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
+        }
+        if (!dataLines.length) continue;
+        let data;
+        try {
+          data = JSON.parse(dataLines.join("\n"));
+        } catch {
+          data = dataLines.join("\n");
+        }
+        events.push({ event, data });
+        if (pred(events)) {
+          clearTimeout(timer);
+          ac.abort();
+          try { await reader.cancel(); } catch { /* ignore */ }
+          return events;
+        }
+      }
+    }
+  } catch (e) {
+    if (e?.name === "AbortError" && events.length) {
+      clearTimeout(timer);
+      return events;
+    }
+    clearTimeout(timer);
+    throw e;
+  }
+  clearTimeout(timer);
+  return events;
+}
+
 
 async function main() {
   const sessionDir = fs.mkdtempSync(path.join(os.tmpdir(), "iui-host-smoke-"));
@@ -278,6 +342,115 @@ async function main() {
     assert(parsed.nodeId === "go", "nodeId in file");
     assert(parsed.type === "submit", "type in file");
 
+
+    // --- SSE: GET /api/stream ---
+    const unauthSse = await fetch(`${base}/api/stream`, {
+      headers: { Accept: "text/event-stream" },
+    });
+    assert(unauthSse.status === 401, `expected 401 SSE, got ${unauthSse.status}`);
+    try { unauthSse.body?.cancel(); } catch { /* ignore */ }
+
+    const sseEvents = await readSseUntil(
+      `${base}/api/stream`,
+      authHeaders(hostToken),
+      (evs) => {
+        const kinds = new Set(evs.map((e) => e.event));
+        return kinds.has("ready") && kinds.has("current") && kinds.has("snapshot") && kinds.has("ui");
+      },
+      5000,
+    );
+    const kinds = sseEvents.map((e) => e.event);
+    assert(kinds.includes("ready"), "SSE missing ready");
+    assert(kinds.includes("current"), "SSE missing current");
+    assert(kinds.includes("snapshot"), "SSE missing snapshot");
+    assert(kinds.includes("ui"), "SSE missing ui");
+    const ready = sseEvents.find((e) => e.event === "ready");
+    assert(ready?.data?.transport === "sse", "ready.transport");
+    const uiTypes = sseEvents.filter((e) => e.event === "ui").map((e) => e.data?.type);
+    assert(uiTypes.includes("ui.open"), "SSE ui.open");
+    console.log("HOST_SMOKE sse-bootstrap OK", { frames: sseEvents.length });
+
+    // Live push: append ui.delta and expect SSE ui event
+    const live = await new Promise(async (resolve, reject) => {
+      const ac = new AbortController();
+      const timer = setTimeout(() => {
+        ac.abort();
+        reject(new Error("SSE live push timeout"));
+      }, 5000);
+      try {
+        const res = await fetch(`${base}/api/stream?since=999999`, {
+          headers: {
+            ...authHeaders(hostToken),
+            Accept: "text/event-stream",
+          },
+          signal: ac.signal,
+        });
+        assert(res.ok, `live SSE ${res.status}`);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let sawReady = false;
+        // After ready, append a new event line
+        const ndjsonPath = path.join(sessionDir, `${sessionId}.ndjson`);
+        const appendLine = () => {
+          fs.appendFileSync(
+            ndjsonPath,
+            JSON.stringify({
+              protocolVersion: "0.1",
+              type: "ui.delta",
+              sessionId,
+              ts: new Date().toISOString(),
+              revision: 3,
+              partial: true,
+              ops: [{ op: "upsert", node: { id: "live", type: "catalog.base/Markdown", props: { text: "sse-live" } } }],
+            }) + "\n",
+          );
+          // bump current revision pointer
+          const cur = JSON.parse(fs.readFileSync(path.join(sessionDir, "current.json"), "utf8"));
+          cur.revision = 3;
+          cur.updatedAt = new Date().toISOString();
+          fs.writeFileSync(path.join(sessionDir, "current.json"), JSON.stringify(cur, null, 2));
+        };
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let sep;
+          while ((sep = buf.indexOf("\n\n")) >= 0) {
+            const frame = buf.slice(0, sep);
+            buf = buf.slice(sep + 2);
+            let event = "message";
+            const dataLines = [];
+            for (const line of frame.split("\n")) {
+              if (line.startsWith("event:")) event = line.slice(6).trim();
+              else if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
+            }
+            if (!dataLines.length) continue;
+            let data;
+            try { data = JSON.parse(dataLines.join("\n")); } catch { data = null; }
+            if (event === "ready" && !sawReady) {
+              sawReady = true;
+              setTimeout(appendLine, 50);
+            }
+            if (event === "ui" && data?.type === "ui.delta" && data?.revision === 3) {
+              clearTimeout(timer);
+              ac.abort();
+              try { await reader.cancel(); } catch { /* ignore */ }
+              resolve(data);
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+        clearTimeout(timer);
+        reject(e);
+      }
+    });
+    assert(live?.type === "ui.delta" && live?.revision === 3, "live SSE ui.delta");
+    console.log("HOST_SMOKE sse-live OK");
+
+
     const hostPkg = path.join(root, "apps/host-window/package.json");
     assert(fs.existsSync(hostPkg), "host-window package missing");
     const viteConfig = path.join(root, "apps/host-window/vite.config.ts");
@@ -290,6 +463,7 @@ async function main() {
       actionsPath: aPath,
       actionLines: actionLines.length,
       auth: "bearer+header",
+      sse: true,
     });
   } finally {
     await api.close();

@@ -194,7 +194,8 @@ Session `state` + 节点 `bind`；Host 上报 `state.set` → MCP 写入 state �
 |------|------|
 | `GET /api/current` | `current.json` |
 | `GET /api/snapshot/:sessionId` | 快照（含 tree/state） |
-| `GET /api/events/:sessionId?since=` | 事件 NDJSON 增量 |
+| `GET /api/stream` | **SSE** 推送 current/snapshot/ui/action（鉴权） |
+| `GET /api/events/:sessionId?since=` | 事件 NDJSON 增量（轮询回退） |
 | `GET /api/packages` | ④ `registry.json` 自定义包列表 |
 | `POST /api/action` | append `actions.ndjson`（actionId 幂等） |
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ComponentRenderer, RenderAction, UiNode } from "../../types.js";
+import { templateRenderers } from "./templates.js";
 
 function emit(
   ctx: { onAction?: (a: RenderAction) => void },
@@ -16,6 +17,7 @@ function emit(
 }
 
 export const shadcnRenderers: Record<string, ComponentRenderer> = {
+  ...templateRenderers,
   "catalog.shadcn/Button": ({ node, ctx }) => {
     const variant = (node.props?.variant as string) ?? "default";
     const size = (node.props?.size as string) ?? "md";

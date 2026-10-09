@@ -101,7 +101,8 @@ npm run smoke         # MCP tree path → SMOKE_OK
 npm run host-smoke    # Host API + actions.ndjson → HOST_SMOKE_OK
 npm run stream-smoke  # ops / action / drain / chunks → STREAM_SMOKE_OK
 npm run stream-phone-compare  # 对比三款手机分片 + SSE/Host 渐进帧
-npm run sandbox-smoke # iframe 信任边界 + package-entry 鉴权 → SANDBOX_SMOKE_OK
+npm run sandbox-smoke
+npm run templates-smoke   # HF templates + Comparison ops stream # iframe 信任边界 + package-entry 鉴权 → SANDBOX_SMOKE_OK
 npm run custom-smoke  # register / hash / unregister / Gauge propose → CUSTOM_SMOKE_OK
 npm run policy-smoke  # lint / policy_check / expr / heuristic → POLICY_SMOKE_OK
 npm run catalog-smoke # charts + schema-only + lint → CATALOG_SMOKE_OK

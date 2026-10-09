@@ -1,0 +1,20 @@
+{
+  "id": "eval-027",
+  "locale": "zh-CN",
+  "prompt": "对比 iPhone 16 Pro、Pixel 9 Pro、Galaxy S25 Ultra 三款手机",
+  "expect": {
+    "format": "ui",
+    "tags": [
+      "comparison",
+      "ops",
+      "phones"
+    ],
+    "anyOfTypes": [
+      "catalog.shadcn/Comparison",
+      "catalog.shadcn/DataTable"
+    ],
+    "forbidTypes": [],
+    "needsAction": false,
+    "preferOps": true
+  }
+}

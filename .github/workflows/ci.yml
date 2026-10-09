@@ -16,6 +16,8 @@ jobs:
     env:
       # Shared by Host API smokes; MCP auto file-token also works, but pin for CI.
       IUI_HOST_TOKEN: "ci-host-token-not-a-secret"
+      IUI_AUTO_HOST: "0"
+      IUI_AUTO_OPEN_BROWSER: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -40,7 +40,7 @@
 ## 与代码的关系
 
 - **① 已落地**：`packages/mcp-server`（stdio）、`catalog-base` / `catalog-shadcn`、`renderer-react`；`npm run build && npm run smoke`。
-- **② 已落地**：`apps/host-window`（Vite Host 参考窗 + 文件旁路 API）；`npm run host` / `npm run host-smoke`。
+- **② 已落地**：`apps/host-window`（Vite Host 参考窗 + 文件旁路 API）；`npm run host` / `npm run host-smoke`。`ui_open` 可自动 spawn Host + 打开一键 URL（见 `AUDIT-P1-AUTO-HOST.md`）。
 - **③ 已落地**：`mode=ops` / `streaming_chunks`、`ui_patch` / `ui_report_action`、actions watch + `ui_drain_actions`、状态机 + G6 骨架；`npm run stream-smoke`。
 - **④ 已落地**：`register_package` / `register_component` / `unregister` + 信任目录 + `examples/custom-packages/acme-gauges` + Host 动态 import；`npm run custom-smoke`。
 - **⑤ 已落地**：设计判断 = prompt + lint + 可选裁判（≠ OpenAI RL）；`policy_check` / `evaluate_expr`；G6 安全 expr + reducers；`npm run policy-smoke`。
@@ -59,3 +59,4 @@
 | 注册即渲染 | schema + 受信本地 renderer entry 一并加载 |
 
 - [`AUDIT-P0-SANDBOX-CI.md`](./AUDIT-P0-SANDBOX-CI.md) — 自定义包 iframe 沙箱 + CI
+- [`AUDIT-P1-AUTO-HOST.md`](./AUDIT-P1-AUTO-HOST.md) — ui_open 自动拉起 Host + strictHash 默认

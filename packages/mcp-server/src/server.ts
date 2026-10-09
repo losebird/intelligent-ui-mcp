@@ -14,12 +14,7 @@ import type { UiNode } from "./protocol.js";
 import type { UiOp } from "./session/ops.js";
 import { policyCheck, isPolicyEnabled } from "./policy/referee.js";
 import { evaluateExpr } from "./policy/expr.js";
-import {
-  resolveHostBaseUrl,
-  buildEmbedUrl,
-  buildHostHint,
-  probeHostReady,
-} from "./hostUrls.js";
+import { ensureHostOnUiOpen } from "./hostLauncher.js";
 
 export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
   const catalog = new CatalogRegistry();
@@ -137,7 +132,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "ui_open",
-    "Open a UI session; writes ui.open to NDJSON bypass. Returns hostUrl, embedUrl (?embed=1), hostReady, hostHint for co-located Host beside chat.",
+    "Open a UI session; writes ui.open to NDJSON bypass. Probes / auto-spawns reference Host + optional browser; returns hostUrl, embedUrl, openUrl (token), hostReady, hostHint, launchCmd.",
     {
       sessionId: z.string().optional(),
       title: z.string().optional(),
@@ -153,10 +148,11 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
       if (!result.ok) {
         return textContent(errResult(result.code, result.message));
       }
-      const hostUrl = resolveHostBaseUrl();
-      const embedUrl = buildEmbedUrl(hostUrl, result.session.sessionId);
-      const hostReady = await probeHostReady(hostUrl);
       const sessionDir = sessions.events.dir;
+      const host = await ensureHostOnUiOpen({
+        sessionId: result.session.sessionId,
+        sessionDir,
+      });
       return textContent(
         okResult({
           sessionId: result.session.sessionId,
@@ -166,10 +162,15 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
           actionsPath: sessions.events.actionsPath(result.session.sessionId),
           snapshotPath: sessions.events.snapshotPath(result.session.sessionId),
           sessionDir,
-          hostUrl,
-          embedUrl,
-          hostReady,
-          hostHint: buildHostHint({ hostUrl, embedUrl, hostReady, sessionDir }),
+          hostUrl: host.hostUrl,
+          embedUrl: host.embedUrl,
+          openUrl: host.openUrl,
+          hostReady: host.hostReady,
+          hostStarted: host.hostStarted,
+          browserOpened: host.browserOpened,
+          launchCmd: host.launchCmd,
+          tokenFile: host.tokenFile,
+          hostHint: host.hostHint,
         }),
       );
     },
@@ -520,11 +521,12 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "register_package",
-    "Register a local custom package from a trusted path (manifest.json + renderer entry). Never evals model JS; no npm/url.",
+    "Register a local custom package from a trusted path (manifest.json + renderer entry). strictHash defaults true (IUI_STRICT_HASH / omit); pass strictHash:false only to skip. Never evals model JS; no npm/url.",
     {
       path: z.string(),
       enable: z.boolean().optional().default(true),
-      strictHash: z.boolean().optional().default(true),
+      // default true — also enforced in registerPackageFromPath via IUI_STRICT_HASH
+      strictHash: z.boolean().optional(),
     },
     async ({ path: pkgPath, enable, strictHash }) => {
       const result = registerPackageFromPath(catalog, hostRegistry, {

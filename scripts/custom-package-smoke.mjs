@@ -67,6 +67,8 @@ async function main() {
     env: {
       ...process.env,
       IUI_SESSION_DIR: sessionDir,
+      IUI_AUTO_HOST: "0",
+      IUI_AUTO_OPEN_BROWSER: "0",
       IUI_REPO_ROOT: root,
     },
   });
@@ -77,7 +79,7 @@ async function main() {
   const reg = parseToolJson(
     await client.callTool({
       name: "register_package",
-      arguments: { path: examplePkg, enable: true, strictHash: true },
+      arguments: { path: examplePkg, enable: true },
     }),
   );
   if (!reg.ok) throw new Error("register trusted failed: " + JSON.stringify(reg));
@@ -156,7 +158,35 @@ async function main() {
     if (missing.ok || missing.error?.code !== "HASH_MISSING") {
       throw new Error("expected HASH_MISSING, got " + JSON.stringify(missing));
     }
-    console.log("HASH_MISSING ok");
+    console.log("HASH_MISSING ok (strictHash:true)");
+
+    // omit strictHash → still default true → HASH_MISSING
+    const missingDefault = parseToolJson(
+      await client.callTool({
+        name: "register_package",
+        arguments: { path: tamperDir },
+      }),
+    );
+    if (missingDefault.ok || missingDefault.error?.code !== "HASH_MISSING") {
+      throw new Error("expected default HASH_MISSING, got " + JSON.stringify(missingDefault));
+    }
+    console.log("HASH_MISSING ok (strictHash omitted / default true)");
+
+    // explicit strictHash:false allows missing hash (warning path)
+    m.id = "acme.loosehash";
+    fs.writeFileSync(tamperManifest, JSON.stringify(m, null, 2));
+    const loose = parseToolJson(
+      await client.callTool({
+        name: "register_package",
+        arguments: { path: tamperDir, strictHash: false },
+      }),
+    );
+    if (!loose.ok) throw new Error("strictHash:false should register: " + JSON.stringify(loose));
+    if (!Array.isArray(loose.warnings) || !loose.warnings.some((w) => /strictHash=false|hash missing/i.test(w))) {
+      console.log("warnings:", loose.warnings);
+    }
+    console.log("strictHash:false allow missing hash ok");
+    await client.callTool({ name: "unregister", arguments: { packageId: "acme.loosehash" } });
   } finally {
     fs.rmSync(tamperDir, { recursive: true, force: true });
   }

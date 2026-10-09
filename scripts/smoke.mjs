@@ -30,7 +30,12 @@ async function main() {
   const transport = new StdioClientTransport({
     command: "node",
     args: [serverEntry],
-    env: { ...process.env, IUI_SESSION_DIR: sessionDir },
+    env: {
+      ...process.env,
+      IUI_SESSION_DIR: sessionDir,
+      IUI_AUTO_HOST: "0",
+      IUI_AUTO_OPEN_BROWSER: "0",
+    },
   });
 
   const client = new Client({ name: "iui-smoke", version: "0.1.0" });
@@ -73,6 +78,20 @@ async function main() {
   const sessionId = opened.sessionId;
   console.log("sessionId:", sessionId);
   console.log("eventsPath:", opened.eventsPath);
+  if (!opened.hostUrl || !opened.embedUrl || !opened.openUrl) {
+    throw new Error("ui_open missing hostUrl/embedUrl/openUrl: " + JSON.stringify(opened));
+  }
+  if (!opened.launchCmd || !String(opened.launchCmd).includes("npm run host")) {
+    throw new Error("ui_open missing launchCmd: " + opened.launchCmd);
+  }
+  if (typeof opened.hostReady !== "boolean") {
+    throw new Error("ui_open hostReady not boolean");
+  }
+  const hint = String(opened.hostHint || "");
+  if (!hint.includes(opened.openUrl) && !/Host ready|Host not reachable/i.test(hint)) {
+    throw new Error("ui_open hostHint weak: " + hint);
+  }
+  console.log("host fields ok openUrl=", opened.openUrl.slice(0, 64) + "…", "ready=", opened.hostReady);
 
   const tree = {
     id: "root",

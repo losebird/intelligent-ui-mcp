@@ -29,7 +29,13 @@ async function withClient(fn) {
   const transport = new StdioClientTransport({
     command: "node",
     args: [serverEntry],
-    env: { ...process.env, IUI_SESSION_DIR: sessionDir, IUI_REPO_ROOT: root },
+    env: {
+      ...process.env,
+      IUI_SESSION_DIR: sessionDir,
+      IUI_REPO_ROOT: root,
+      IUI_AUTO_HOST: "0",
+      IUI_AUTO_OPEN_BROWSER: "0",
+    },
   });
   const client = new Client({ name: "iui-catalog-smoke", version: "0.1.0" });
   await client.connect(transport);

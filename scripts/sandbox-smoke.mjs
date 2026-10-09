@@ -81,6 +81,8 @@ async function main() {
     env: {
       ...process.env,
       IUI_SESSION_DIR: sessionDir,
+      IUI_AUTO_HOST: "0",
+      IUI_AUTO_OPEN_BROWSER: "0",
       IUI_REPO_ROOT: root,
       IUI_HOST_TOKEN: hostToken,
     },
@@ -122,6 +124,24 @@ async function main() {
     assert(body.source.includes("export function Gauge"), "source missing Gauge");
     assert(body.source.includes('from "react"') || body.source.includes("from 'react'"), "expected react import");
     console.log("package-entry source ok, bytes=", body.bytes);
+
+    // Host re-verifies registry hash (strictHash default)
+    const registryFile = path.join(sessionDir, "registry.json");
+    const registry = JSON.parse(fs.readFileSync(registryFile, "utf8"));
+    const rec = registry.packages.find((x) => x.id === "acme.gauges");
+    assert(rec && rec.hash, "registry missing hash");
+    const savedHash = rec.hash;
+    rec.hash = "sha256-" + "a".repeat(64);
+    fs.writeFileSync(registryFile, JSON.stringify(registry, null, 2));
+    const mismatch = await fetch(`${base}/api/package-entry/acme.gauges`, {
+      headers: authHeaders(hostToken),
+    });
+    assert(mismatch.status === 409, `expected HASH_MISMATCH 409, got ${mismatch.status}`);
+    const mismatchBody = await mismatch.json();
+    assert(mismatchBody.error === "HASH_MISMATCH", JSON.stringify(mismatchBody));
+    console.log("package-entry HASH_MISMATCH 409 ok");
+    rec.hash = savedHash;
+    fs.writeFileSync(registryFile, JSON.stringify(registry, null, 2));
 
     // CORS denied for non-loopback
     const cors = await fetch(`${base}/api/package-entry/acme.gauges`, {

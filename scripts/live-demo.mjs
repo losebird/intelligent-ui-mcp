@@ -65,6 +65,8 @@ async function main() {
     env: {
       ...process.env,
       IUI_SESSION_DIR: sessionDir,
+      IUI_AUTO_HOST: "0",
+      IUI_AUTO_OPEN_BROWSER: "0",
     },
   });
 

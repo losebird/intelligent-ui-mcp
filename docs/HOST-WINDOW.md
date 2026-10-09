@@ -71,12 +71,14 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 
 ## 启动顺序（验收脚本）
 
-1. 设置 `IUI_SESSION_DIR`。
-2. 启动 Host。
-3. 启动 / 连接 MCP（经 Cursor）。
-4. `ui_open` → Host 显示 session。
+1. 设置 `IUI_SESSION_DIR`（及可选同一 `IUI_HOST_TOKEN`）。
+2. 启动 / 连接 MCP（经 Cursor）。
+3. `ui_open` → 默认 **自动 spawn Host + 打开一键 URL**（`openUrl`）；也可事先 `npm run host`。返回 `hostReady` / `hostHint` / `launchCmd`。
+4. Host 顶栏出现 session（或打开 `embedUrl` 旁栏）。
 5. `ui_propose` tree → Host 画控件。
 6. 点击 Button → `actions.ndjson` →（③）harness 收到并 patch。
+
+自动行为与 env：见 [`AUDIT-P1-AUTO-HOST.md`](./AUDIT-P1-AUTO-HOST.md)。冒烟请设 `IUI_AUTO_HOST=0 IUI_AUTO_OPEN_BROWSER=0`。
 
 ## ② 验收清单
 
@@ -142,6 +144,12 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 5. **actionId 幂等**：按行 `JSON.parse` 后比对 `actionId` 字段（加进程内 Set），**不用**全文 `includes` 字符串匹配。
 
 详见根 README「Host API 鉴权」。
+
+## ui_open 自动拉起（P1）
+
+- MCP：`ensureHostOnUiOpen`（`packages/mcp-server/src/hostLauncher.ts`）
+- 一键 URL：`?sessionId=&token=`（Host `resolveClientHostToken` 已读 query）
+- 关：`IUI_AUTO_HOST=0` / `IUI_AUTO_OPEN_BROWSER=0`
 
 ## 明确不做
 

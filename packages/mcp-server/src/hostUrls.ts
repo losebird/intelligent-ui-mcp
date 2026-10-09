@@ -6,7 +6,8 @@ export function resolveHostBaseUrl(): string {
 
 export function buildEmbedUrl(hostBase: string, sessionId: string): string {
   const base = hostBase.replace(/\/$/, "");
-  const q = new URLSearchParams({ embed: "1", sessionId });
+  // chrome=0 → Host bare shell (no status/XFER bar) for in-bubble iframes
+  const q = new URLSearchParams({ embed: "1", chrome: "0", sessionId });
   return `${base}/?${q.toString()}`;
 }
 
@@ -19,7 +20,10 @@ export function buildOpenUrl(opts: {
 }): string {
   const base = opts.hostUrl.replace(/\/$/, "");
   const q = new URLSearchParams({ sessionId: opts.sessionId });
-  if (opts.embed) q.set("embed", "1");
+  if (opts.embed) {
+    q.set("embed", "1");
+    q.set("chrome", "0");
+  }
   if (opts.token) q.set("token", opts.token);
   return `${base}/?${q.toString()}`;
 }

@@ -4,7 +4,8 @@
 > 范围：`intelligent-ui-mcp` 相对「边输出边生成」体感；可执行 P0/P1。  
 > 对照源：OpenAI Intelligent UI 公开说明；[thesysdev/openui](https://github.com/thesysdev/openui)；[CopilotKit/OpenGenerativeUI](https://github.com/CopilotKit/OpenGenerativeUI)；本仓 `DESIGN-v0.1.md` / G3 / G2 / Host 旁路。
 
-> **P0 本机落地（2026-10-08）**：`proposeChunks` 已 JSONL 即 apply；Host 有「生成中」条 + `ui.delta` 日志；prompt 强制对比类 `mode=ops`；`npm run stream-phone-compare` 验收渐进帧（无截图）。
+> **P0 本机落地（2026-10-08）**：`proposeChunks` 已 JSONL 即 apply；Host 有「生成中」条 + `ui.delta` 日志；prompt 强制对比类 `mode=ops`；`npm run stream-phone-compare` 验收渐进帧（无截图）。  
+> **P0 默认强化（2026-10-09）**：`ui_propose` 工具描述/推断默认走 ops；`chunkDone` 省略=partial；prompt 示例改为手机对比分片；`live-demo` 改为 ops 边画；`stream-phone-compare` 用 SSE+Host snapshot 证明分片可见。见 [`AUDIT-P0-OPS-DEFAULT.md`](./AUDIT-P0-OPS-DEFAULT.md)。
 
 > **相关决策文档**：Ace 进一步目标「任意无 Renderer harness 也要气泡内 Intelligent UI」——结论见 [`HARNESSLESS-FEASIBILITY.md`](./HARNESSLESS-FEASIBILITY.md)（MCP-only 不可达原生气泡；默认押自动薄壳 Host）。
 
@@ -99,7 +100,7 @@ sp.set("root = Stack([header])\nheader = CardHeader(\"Hello\")\n");
 
 | 现象 | 根因 | 证据 |
 |------|------|------|
-| 等很久才突然满表 | Agent 默认 **整树 `mode=tree`**，想完再 propose | 直播「对比三款手机」路径；`TOOLS-SCHEMA` 默认 `mode=tree` |
+| 等很久才突然满表 | ~~Agent 默认整树 `mode=tree`~~ → **已改为 ops 默认路径**（工具描述+prompt+chunkDone partial） | 仍可能被模型显式 `mode=tree`；靠 prompt/lint 约束 |
 | `streaming_chunks` 名不副实 | **仅 `chunkDone` 时 `JSON.parse`**；未 done 只 buffer，**Host 无增量树** | `packages/mcp-server/src/session/store.ts` `proposeChunks`；README「③ 已知简化」 |
 | UI 不在聊天里 | Host 刻意解耦（stdio 占用）；文档已写「不是 Cursor 气泡插件」 | `docs/HOST-WINDOW.md` |
 | 更钝 | 执行子 agent **桌面截图 / 硬刷新**进关键路径 | 父对话联调记录 |
@@ -116,7 +117,7 @@ sp.set("root = Stack([header])\nheader = CardHeader(\"Hello\")\n");
 
 | ID | 动作 | Owner 提示 | 验收 |
 |----|------|------------|------|
-| **P0-a** | Harness / prompt：对比类答案 **强制 `mode=ops` 分片 upsert**（先 Stack+表头 → 再逐行 phone）；禁止单次巨型 tree 作为默认演示路径 | 改 `get_prompt_fragment` + agent 系统片；示例 script | 「对比三款手机」可见：空壳→表头→第1行→… |
+| **P0-a** | ✅ Harness / prompt：对比类 **强制 `mode=ops` 分片**；工具描述+示例+`live-demo` 不再整树演示 | `prompt.ts` 0.2.0 / `server.ts` / `stream-phone-compare` | 「对比三款手机」空壳→表头→逐行；SSE 可见 |
 | **P0-b** | 真流式 chunks：**要么** 实现 partial JSON / JSONL ops 抽出（每完整 `op` 立即 `ui.delta`），**要么** 文档降级改名 `buffer_until_done` 并停止宣称 streaming | `store.ts` `proposeChunks` | 未 `chunkDone` 时 Host 已有节点 |
 | **P0-c** | Host：收到 `partial`/`ui.delta` **立即 paint**；流式中显示「生成中」条；revision 抖动不整页白屏 | `App.tsx` + renderer key 策略 | 连续 upsert 无空白闪烁 |
 | **P0-d** | **关键路径杀掉桌面截图**：agent 只回 Host URL + sessionId；截图改异步/可选 | Grok Bot 联调 playbook | 首屏延迟不再含 Computer 子任务 |

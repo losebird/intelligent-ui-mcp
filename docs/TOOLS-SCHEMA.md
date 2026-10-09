@@ -325,6 +325,8 @@
 
 ### `ui_propose` ①/③（① 整树；③ ops / streaming_chunks 已落地）
 
+> **P0 默认**：对比 / 表格 / 多行列表 → `mode=ops` + `chunkDone:false` 分片（壳→表头→逐行→`chunkDone:true`）。禁止把「想完整树再一次 `mode=tree`」当地板演示。详见 [`STREAMING-UX-GAP.md`](./STREAMING-UX-GAP.md) / [`AUDIT-P0-OPS-DEFAULT.md`](./AUDIT-P0-OPS-DEFAULT.md)。
+
 **Input**
 ```json
 {
@@ -335,8 +337,7 @@
     "sessionId": { "type": "string" },
     "mode": {
       "enum": ["tree", "ops", "streaming_chunks"],
-      "default": "tree",
-      "description": "tree=整树 replace；ops=直接 ops；streaming_chunks=③ JSONL ops 每行即 apply；遗留整段 JSON 仍等 chunkDone"
+      "description": "省略时：有 ops[]→ops；有 chunk→streaming_chunks；否则 tree。对比/表/列表必须 ops 分片。tree=整树 replace（仅极小单次）；ops=增量+边画；streaming_chunks=JSONL 每行即 apply"
     },
     "tree": {
       "type": "object",
@@ -352,7 +353,11 @@
       "description": "mode=streaming_chunks 时：增量文本，拼成 JSON"
     },
     "chunkIndex": { "type": "integer", "minimum": 0 },
-    "chunkDone": { "type": "boolean", "default": false },
+    "chunkDone": {
+      "type": "boolean",
+      "default": false,
+      "description": "mode=ops：省略/false=保持 streaming（Host 已上屏该分片）；仅最后一次 true 完结。streaming_chunks：true 时 flush 遗留非 JSONL 缓冲"
+    },
     "plainTextFallback": {
       "type": "string",
       "description": "若策略判定纯文字，可只传此字段且 tree 省略"

@@ -16,6 +16,20 @@ import { policyCheck, isPolicyEnabled } from "./policy/referee.js";
 import { evaluateExpr } from "./policy/expr.js";
 import { ensureHostOnUiOpen } from "./hostLauncher.js";
 
+
+/** Infer propose mode: explicit > ops[] > chunk > tree (plainText / one-shot). */
+function resolveProposeMode(args: {
+  mode?: "tree" | "ops" | "streaming_chunks";
+  ops?: unknown[];
+  chunk?: string;
+  tree?: unknown;
+}): "tree" | "ops" | "streaming_chunks" {
+  if (args.mode) return args.mode;
+  if (typeof args.chunk === "string") return "streaming_chunks";
+  if (Array.isArray(args.ops) && args.ops.length > 0) return "ops";
+  return "tree";
+}
+
 export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
   const catalog = new CatalogRegistry();
   const sessions = new SessionStore(catalog, opts.sessionDir);
@@ -178,10 +192,10 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
 
   server.tool(
     "ui_propose",
-    "Propose UI: mode=tree (replace), mode=ops (delta + partial paint), mode=streaming_chunks (JSONL ops apply per line; leftover tree parsed on chunkDone). Optional query/forceUi for policy gate.",
+    "Propose UI with progressive paint. DEFAULT for comparisons/tables/multi-row lists: mode=ops + chunkDone:false shard upserts (① Stack shell → ② DataTable headers empty rows → ③ row-by-row → ④ final chunkDone:true). Do NOT one-shot a full tree for demos. mode=tree only for tiny single-shot forms/plainTextFallback. mode=streaming_chunks = JSONL ops (one op per line, apply immediately). Omitting mode infers ops if ops[] present, else tree. Omitting chunkDone on ops keeps partial/streaming until chunkDone:true. Optional query/forceUi for policy gate.",
     {
       sessionId: z.string(),
-      mode: z.enum(["tree", "ops", "streaming_chunks"]).optional().default("tree"),
+      mode: z.enum(["tree", "ops", "streaming_chunks"]).optional(),
       tree: z.record(z.unknown()).optional(),
       ops: z.array(z.record(z.unknown())).optional(),
       chunk: z.string().optional(),
@@ -195,6 +209,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
       forceUi: z.boolean().optional().default(false),
     },
     async (args) => {
+      const mode = resolveProposeMode(args);
       // Optional policy gate (Phase B): only when enabled + query available
       let policyMeta: Record<string, unknown> | undefined;
       const sessionPeek = sessions.get(args.sessionId);
@@ -202,7 +217,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
         (typeof args.query === "string" && args.query.trim()) ||
         sessionPeek?.lastQuery ||
         "";
-      if (isPolicyEnabled() && query && args.mode === "tree" && !args.forceUi) {
+      if (isPolicyEnabled() && query && mode === "tree" && !args.forceUi) {
         const proposedTypes: string[] = [];
         const walk = (n: Record<string, unknown> | undefined) => {
           if (!n || typeof n !== "object") return;
@@ -267,11 +282,12 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
       }
 
       return sessions.runLocked(args.sessionId, () => {
-        if (args.mode === "ops") {
+        if (mode === "ops") {
           const result = sessions.proposeOps({
             sessionId: args.sessionId,
             ops: (args.ops ?? []) as UiOp[],
-            chunkDone: args.chunkDone !== false,
+            // Progressive default: omit/false → stay streaming; only true finalizes.
+            chunkDone: args.chunkDone === true,
             runLint: args.runLint,
             refresh: args.refresh,
             targetNodeId: args.targetNodeId,
@@ -301,7 +317,7 @@ export function createIntelligentUiServer(opts: { sessionDir?: string } = {}) {
           );
         }
 
-        if (args.mode === "streaming_chunks") {
+        if (mode === "streaming_chunks") {
           const result = sessions.proposeChunks({
             sessionId: args.sessionId,
             chunk: args.chunk,

@@ -43,6 +43,9 @@ jobs:
       - name: Stream / action smoke
         run: npm run stream-smoke
 
+      - name: Progressive phone-compare (ops + SSE)
+        run: npm run stream-phone-compare
+
       - name: Custom package smoke
         run: npm run custom-smoke
 

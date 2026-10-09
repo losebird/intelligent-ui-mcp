@@ -57,3 +57,5 @@
 | `ui.delta` | 流式增量事件 |
 | Session | 一次 UI 会话（`ui_open` … `ui_close`） |
 | 注册即渲染 | schema + 受信本地 renderer entry 一并加载 |
+
+- [`AUDIT-P0-SANDBOX-CI.md`](./AUDIT-P0-SANDBOX-CI.md) — 自定义包 iframe 沙箱 + CI

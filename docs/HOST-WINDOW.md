@@ -101,7 +101,7 @@ Harness --stdio--> MCP server --append--> $IUI_SESSION_DIR/<sessionId>.ndjson
 ## ④ Host 与自定义包
 
 - 轮询 `GET /api/packages`（读 `IUI_SESSION_DIR/registry.json`）。
-- 对每个包 `entryAbsPath`：Vite `/@fs` 动态 `import()`，按 `exports` 注入 `UiRenderer.extraRenderers`。
+- 对每个自定义包：鉴权 `GET /api/package-entry/:id` 取源码 → **iframe 沙箱**（`iui.sandbox.v1`）注入 `UiRenderer.extraRenderers`；builtin 仍主进程。
 - import 失败 / 缺 export → 黄条 + 该 type `catalog.base/Unknown`；MCP 侧已拒的路径 Host 不会看到。
 
 ## 客户端事件路径（M1：host-adapter）

@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Shared by Host API smokes; MCP auto file-token also works, but pin for CI.
+      IUI_HOST_TOKEN: "ci-host-token-not-a-secret"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build / typecheck
+        run: npm run build
+
+      - name: MCP smoke
+        run: npm run smoke
+
+      - name: Host API smoke (auth + CORS)
+        run: npm run host-smoke
+
+      - name: Stream / action smoke
+        run: npm run stream-smoke
+
+      - name: Custom package smoke
+        run: npm run custom-smoke
+
+      - name: Sandbox trust-boundary smoke
+        run: npm run sandbox-smoke
+
+      - name: Eval cases validate
+        run: npm run eval:validate

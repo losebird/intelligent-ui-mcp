@@ -303,6 +303,89 @@ export function createSessionMiddleware(sessionDir, opts = {}) {
         });
       }
 
+      const pkgEntryMatch = pathname.match(/^\/api\/package-entry\/([^/]+)$/);
+      if (req.method === "GET" && pkgEntryMatch) {
+        const packageId = decodeURIComponent(pkgEntryMatch[1]);
+        const registryFile = path.join(dir, "registry.json");
+        const registry = readJsonFile(registryFile, { packages: [] });
+        const pkgs = Array.isArray(registry?.packages) ? registry.packages : [];
+        const rec = pkgs.find((p) => p && p.id === packageId);
+        if (!rec) {
+          return sendJson(res, 404, {
+            ok: false,
+            error: "PACKAGE_NOT_REGISTERED",
+            packageId,
+          });
+        }
+        if (rec.enabled === false) {
+          return sendJson(res, 403, {
+            ok: false,
+            error: "PACKAGE_DISABLED",
+            packageId,
+          });
+        }
+        const entryAbs = rec.entryAbsPath;
+        if (!entryAbs || typeof entryAbs !== "string") {
+          return sendJson(res, 400, {
+            ok: false,
+            error: "NO_ENTRY",
+            packageId,
+          });
+        }
+        let realEntry;
+        try {
+          realEntry = fs.realpathSync(entryAbs);
+        } catch {
+          return sendJson(res, 404, {
+            ok: false,
+            error: "ENTRY_NOT_FOUND",
+            packageId,
+            entryAbsPath: entryAbs,
+          });
+        }
+        // Must stay under the registered package root (prevents registry tampering → arbitrary read).
+        let rootReal = rec.rootPath;
+        try {
+          if (rootReal && fs.existsSync(rootReal)) rootReal = fs.realpathSync(rootReal);
+        } catch {
+          /* keep */
+        }
+        if (
+          rootReal &&
+          realEntry !== rootReal &&
+          !realEntry.startsWith(rootReal + path.sep)
+        ) {
+          return sendJson(res, 403, {
+            ok: false,
+            error: "ENTRY_OUTSIDE_PACKAGE_ROOT",
+            packageId,
+          });
+        }
+        const maxBytes = 1_500_000;
+        const st = fs.statSync(realEntry);
+        if (!st.isFile()) {
+          return sendJson(res, 400, { ok: false, error: "ENTRY_NOT_FILE", packageId });
+        }
+        if (st.size > maxBytes) {
+          return sendJson(res, 413, {
+            ok: false,
+            error: "ENTRY_TOO_LARGE",
+            packageId,
+            size: st.size,
+            maxBytes,
+          });
+        }
+        const source = fs.readFileSync(realEntry, "utf8");
+        return sendJson(res, 200, {
+          ok: true,
+          packageId,
+          entryAbsPath: realEntry,
+          hash: rec.hash ?? null,
+          bytes: Buffer.byteLength(source, "utf8"),
+          source,
+        });
+      }
+
       if (req.method === "POST" && pathname === "/api/action") {
         const body = await readBody(req);
         const result = appendAction(dir, body);

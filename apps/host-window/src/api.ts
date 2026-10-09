@@ -220,3 +220,15 @@ export async function fetchPackages() {
     registryPath?: string;
   }>("/api/packages");
 }
+
+export async function fetchPackageEntry(packageId: string) {
+  return getJson<{
+    ok: boolean;
+    packageId?: string;
+    entryAbsPath?: string;
+    hash?: string | null;
+    bytes?: number;
+    source?: string;
+    error?: string;
+  }>(`/api/package-entry/${encodeURIComponent(packageId)}`);
+}

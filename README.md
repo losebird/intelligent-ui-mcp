@@ -5,7 +5,7 @@
 > ① 已完成：stdio 服务、两包真 schema、renderer-react、events NDJSON 旁路、冒烟。  
 > ② 已完成：Host 参考窗（文件旁路展示 + actions.ndjson）。  
 > ③ 已完成：`mode=ops` / `streaming_chunks`、`ui_patch` / `ui_report_action`、actions watch + `ui_drain_actions`、G6 骨架（state.set → patch）。  
-> ④ 已完成：`register_package` / `register_component` / `unregister`、信任目录 + hash、`acme.gauges` 示例、Host 动态 import。  
+> ④ 已完成：`register_package` / `register_component` / `unregister`、信任目录 + hash、`acme.gauges` 示例、Host **iframe 沙箱**加载自定义包。  
 > ⑤ 已完成：设计判断 = **prompt + lint + 可选裁判**（≠ OpenAI RL）；`policy_check` / `evaluate_expr`；G6 安全 expr + `reducers`。  
 > ⑥ 已完成：`catalog.charts` 真渲染；radix/mui/antd/chakra schema-only + Host 别名；`evals/cases` ≥20 + `npm run eval` / `catalog-smoke`。
 
@@ -84,7 +84,7 @@ Host HTTP（`/api/current`、`/api/snapshot|events|…`、`POST /api/action`）�
 1. 设置 `IUI_SESSION_DIR`（及可选 `IUI_HOST_TOKEN`）
 2. `npm run host` → 浏览器打开 Host
 3. Cursor / harness 连接 MCP，调用 `ui_open` → Host 顶栏出现 session
-4. （可选）`register_package` 自定义包 → Host 读 `registry.json` 动态加载
+4. （可选）`register_package` 自定义包 → Host 读 `registry.json`，经 `/api/package-entry` + iframe 沙箱加载
 5. `ui_propose`（tree 或 ops）出树 → 主区渲染控件
 6. 点击 Button / 拖滑条 → Host 写 `{sessionId}.actions.ndjson`
 7. MCP **watch 入库**并广播 `ui.action`；harness 用 `ui_drain_actions` 取走 → `ui_patch` 更新衍生节点
@@ -98,6 +98,7 @@ npm run build
 npm run smoke         # MCP tree path → SMOKE_OK
 npm run host-smoke    # Host API + actions.ndjson → HOST_SMOKE_OK
 npm run stream-smoke  # ops / action / drain / chunks → STREAM_SMOKE_OK
+npm run sandbox-smoke # iframe 信任边界 + package-entry 鉴权 → SANDBOX_SMOKE_OK
 npm run custom-smoke  # register / hash / unregister / Gauge propose → CUSTOM_SMOKE_OK
 npm run policy-smoke  # lint / policy_check / expr / heuristic → POLICY_SMOKE_OK
 npm run catalog-smoke # charts + schema-only + lint → CATALOG_SMOKE_OK
@@ -174,7 +175,7 @@ node scripts/hash-package-entry.mjs examples/custom-packages/acme-gauges/dist/re
 `register_package({ path, enable?, strictHash? })`：`strictHash` 默认 true；缺 hash → `HASH_MISSING`；错 hash → `HASH_MISMATCH`；目录外 → `PATH_NOT_TRUSTED`。  
 **永不** eval 模型 JS；不支持 npm/url。
 
-Host：轮询 `GET /api/packages` → 对 `entryAbsPath` 做 Vite `/@fs` 动态 `import()`，按 `exports` 映射到 `UiRenderer.extraRenderers`；失败黄条 + `catalog.base/Unknown`。
+Host：轮询 `GET /api/packages` → `GET /api/package-entry/:id` 取源码 → iframe 沙箱按 `exports` 映射到 `UiRenderer.extraRenderers`；失败黄条 / Sandbox error。
 
 规范全文：[`docs/CUSTOM-PACKAGE-MANIFEST.md`](./docs/CUSTOM-PACKAGE-MANIFEST.md)。
 
@@ -254,8 +255,13 @@ npm run eval            # → evals/results/latest.md
 ## ④ 已知简化
 
 - `register_component`：仅已注册 local 包上的 **schema 热更新**（不换 entry）；换入口请重新 `register_package`。
-- Host 动态加载依赖 Vite `/@fs`（dev）；不做 iframe 硬沙箱。
+- 自定义包默认 **iframe 沙箱**（`sandbox="allow-scripts"` + CSP `connect-src 'none'`）；builtin 仍主进程。详见 [`docs/CUSTOM-PACKAGE-MANIFEST.md`](./docs/CUSTOM-PACKAGE-MANIFEST.md)「信任边界」。
+- 调试逃生舱：`IUI_CUSTOM_PACKAGE_MAIN_WORLD=1`（同页 `/@fs` import，不安全）。
 - 无 npm/url 远程装包。
+
+## CI
+
+GitHub Actions（`.github/workflows/ci.yml`）：`npm ci` → `build` → `smoke` / `host-smoke` / `stream-smoke` / `custom-smoke` / `sandbox-smoke` / `eval:validate`。CI 注入 `IUI_HOST_TOKEN`。
 
 ## License
 

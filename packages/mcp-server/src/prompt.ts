@@ -116,6 +116,23 @@ export function buildPromptFragment(
     );
   }
   lines.push("");
+  lines.push(zh ? "## Data tool vs Render tool（防 remount）" : "## Data tool vs Render tool (anti-remount)");
+  lines.push(
+    zh
+      ? "- **Render**：`ui_open` / `ui_propose` — 建壳、定类型、首次上树。贵；可能整卡/iframe remount。"
+      : "- **Render**: `ui_open` / `ui_propose` — shell, types, first tree. Expensive; may remount card/iframe.",
+  );
+  lines.push(
+    zh
+      ? "- **Data**：`ui_patch`（`patch_props` / `statePatch`）— **保持 `node.id`**。刷新数字/文案/选中只用 Data。"
+      : "- **Data**: `ui_patch` (`patch_props` / `statePatch`) — **keep `node.id`**. Refresh values with Data only.",
+  );
+  lines.push(
+    zh
+      ? "- 用户交互后：禁止 `ui_propose`+`replace_tree` 重画整卡；用 `ui_patch`。见 docs/DATA-VS-RENDER.md。"
+      : "- After user interaction: no `ui_propose`+`replace_tree` rebuild; use `ui_patch`. See docs/DATA-VS-RENDER.md.",
+  );
+  lines.push("");
   lines.push("## Enabled components");
   for (const [pkg, comps] of byPkg) {
     lines.push(`### ${pkg}`);

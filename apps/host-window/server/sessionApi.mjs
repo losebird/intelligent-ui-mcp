@@ -130,10 +130,11 @@ export function appendAction(dir, body) {
     nodeId: body.nodeId ?? body.action?.nodeId ?? null,
     type,
     componentType: body.componentType ?? body.action?.componentType ?? null,
-    value: body.value ?? body.action?.value,
+    value: body.value !== undefined ? body.value : body.action?.value,
     path: body.path ?? body.action?.path,
     payload: body.payload ?? body.action?.payload ?? {},
     ts: body.ts ?? new Date().toISOString(),
+    source: body.source ?? body.action?.source ?? "host",
   };
 
   const file = actionsPath(dir, sessionId);

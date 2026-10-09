@@ -1,4 +1,7 @@
-import type { RenderAction } from "@intelligent-ui/renderer-react";
+import {
+  normalizeRenderAction,
+  type RenderAction,
+} from "@intelligent-ui/renderer-react";
 
 export interface CurrentPointer {
   latestSessionId: string;
@@ -137,16 +140,22 @@ export async function postAction(
   action: RenderAction,
   actionId?: string,
 ) {
+  const normalized =
+    normalizeRenderAction(action, {
+      nodeId: action.nodeId,
+      componentType: action.componentType,
+    }) ?? action;
   const body = JSON.stringify({
     actionId,
     sessionId,
-    type: action.type,
-    nodeId: action.nodeId,
-    componentType: action.componentType,
-    value: action.value,
-    path: action.path,
-    payload: action.payload ?? {},
+    type: normalized.type,
+    nodeId: normalized.nodeId,
+    componentType: normalized.componentType,
+    value: normalized.value,
+    path: normalized.path,
+    payload: normalized.payload ?? {},
     ts: new Date().toISOString(),
+    source: "host",
   });
 
   const url = apiUrl("/api/action");

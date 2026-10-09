@@ -142,7 +142,7 @@ export default { Gauge };
 | **builtin** `catalog.*` | 仍在 Host 主文档 / `renderer-react` 同进程渲染（随应用分发，视为受信） |
 | **自定义包** | **默认** `iframe` + `sandbox="allow-scripts"`（**不开** same-origin）→ opaque origin |
 | 加载 | Parent（Host）用 token 调 `/api/package-entry/:id` 读源码 → `postMessage` 把 React UMD + moduleSource 送进 iframe → blob `import()` |
-| 协议 | `iui.sandbox.v1`：`boot` / `init` / `props` / `ready` / `action` / `resize` / `error` / `dispose`；parent 校验 `event.source` |
+| 协议 | `iui.sandbox.v1`：`boot` / `init` / `props` / `ready` / `action` / `action_ack` / `resize` / `error` / `dispose`；parent 校验 `event.source` + `requestId`；action 与 Host `RenderAction` 对齐 |
 | CSP（iframe） | `default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; connect-src 'none'; …` |
 | 能力面 | 无 Host token、无 `/api`、无父页 DOM、无导航、无网络（CSP）；仅能 `postMessage` 回 action |
 | 逃生舱 | `IUI_CUSTOM_PACKAGE_MAIN_WORLD=1` → 旧版同页 `/@fs` `import()`（**不安全**，仅调试） |

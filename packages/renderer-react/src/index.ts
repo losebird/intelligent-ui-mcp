@@ -9,3 +9,9 @@ export {
   resolveAlias,
   adaptAliasedProps,
 } from "./UiRenderer.js";
+export {
+  normalizeRenderAction,
+  coerceActionInput,
+  toHostActionRecord,
+  type LooseAction,
+} from "./actionNormalize.js";

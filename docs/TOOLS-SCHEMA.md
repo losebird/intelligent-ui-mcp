@@ -514,7 +514,8 @@
 }
 ```
 
-**Output**：`{ ok, actionId, state, note: "Harness should decide next ui_patch / message" }`  
+**Output**：`{ ok, actionId, state, note: "DATA tool next: prefer ui_patch…" }`  
+> Action 后请走 **Data**（`ui_patch` / `patch_props` / `statePatch`），勿 `ui_propose`+`replace_tree` 重画（见 [`DATA-VS-RENDER.md`](./DATA-VS-RENDER.md)）。  
 **Payload 限制**：序列化后 ≤ 32KB，否则 `PAYLOAD_TOO_LARGE`。
 
 ---

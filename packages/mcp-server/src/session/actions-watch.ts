@@ -6,6 +6,7 @@ export type HostActionLine = {
   action: Record<string, unknown>;
   ts?: string;
   sessionId?: string;
+  source?: string;
 };
 
 /**
@@ -108,6 +109,7 @@ export class ActionsFileWatcher {
           action,
           ts: typeof obj.ts === "string" ? obj.ts : undefined,
           sessionId: typeof obj.sessionId === "string" ? obj.sessionId : undefined,
+          source: typeof obj.source === "string" ? obj.source : undefined,
         });
       } catch {
         // skip bad line

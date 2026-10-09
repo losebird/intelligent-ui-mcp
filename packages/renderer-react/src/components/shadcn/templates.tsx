@@ -100,6 +100,11 @@ export const templateRenderers: Record<string, ComponentRenderer> = {
   "catalog.shadcn/Calculator": ({ node, ctx }) => {
     const [display, setDisplay] = useState(String(node.props?.expression ?? "0"));
     const [result, setResult] = useState(String(node.props?.result ?? ""));
+    // Data-tool patches (ui_patch patch_props) must update screen without remount.
+    useEffect(() => {
+      if (node.props?.expression != null) setDisplay(String(node.props.expression));
+      if (node.props?.result != null) setResult(String(node.props.result));
+    }, [node.props?.expression, node.props?.result]);
     const keys = [
       ["C", "±", "%", "÷"],
       ["7", "8", "9", "×"],

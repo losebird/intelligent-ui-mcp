@@ -7,6 +7,7 @@ import { lintTree, type LintResult } from "../lint.js";
 import { applyDerived, evaluateExpr } from "../policy/expr.js";
 import { applyOps, type UiOp } from "./ops.js";
 import { ActionsFileWatcher, type HostActionLine } from "./actions-watch.js";
+import { remountRiskWarnings } from "./remountRisk.js";
 
 function genSessionId(): string {
   return `s_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
@@ -360,6 +361,13 @@ export class SessionStore {
     }
 
     if (session.status === "action_pending") this.clearActionTimer(session.sessionId);
+    for (const w of remountRiskWarnings({
+      prevTree: session.tree,
+      nextTree: input.tree,
+      via: "propose_tree",
+    })) {
+      warnings.push(w);
+    }
     session.status = "streaming";
     session.tree = input.tree;
     // Apply session reducers + node.expr against current state
@@ -452,6 +460,14 @@ export class SessionStore {
       }
     }
     if (refreshNote) warnings.push(refreshNote);
+    for (const w of remountRiskWarnings({
+      prevTree: session.tree,
+      nextTree: applied.tree,
+      ops: input.ops,
+      via: "propose_ops",
+    })) {
+      warnings.push(w);
+    }
 
     if (session.status === "action_pending") this.clearActionTimer(session.sessionId);
     // Progressive default: only explicit chunkDone:true finalizes (omit/false → partial).
@@ -786,6 +802,14 @@ export class SessionStore {
         if (issue.severity === "warn") warnings.push(`${issue.code}: ${issue.message}`);
       }
     }
+    for (const w of remountRiskWarnings({
+      prevTree: session.tree,
+      nextTree: applied.tree,
+      ops: input.ops,
+      via: "patch",
+    })) {
+      warnings.push(w);
+    }
 
     if (input.statePatch && typeof input.statePatch === "object") {
       session.state = { ...session.state, ...input.statePatch };
@@ -965,8 +989,8 @@ export class SessionStore {
       status: session.status,
       note:
         exprNotes.length > 0
-          ? `Harness should decide next ui_patch / message; expr: ${exprNotes.join("; ")}`
-          : "Harness should decide next ui_patch / message (expr/reducers applied if any)",
+          ? `DATA tool next: ui_patch (patch_props/statePatch) — avoid ui_propose/replace_tree (remounts). expr: ${exprNotes.join("; ")}`
+          : "DATA tool next: prefer ui_patch + patch_props/statePatch; keep node.id. Do NOT ui_propose/replace_tree to refresh data (remounts iframe/local state). See docs/DATA-VS-RENDER.md",
     };
   }
 

@@ -29,6 +29,8 @@
 | `SESSION-STATE.md` | G3 / ③ | 状态机 |
 | `CATALOG-BASE-SHADCN.md` | G5 / ① | base + shadcn 控件 |
 | `HF-TEMPLATES.md` | 演示题差距 | Calculator/Comparison/Stepper 等高频模板 |
+| `DATA-VS-RENDER.md` | remount / 交互 | Data tool vs Render tool 约定 |
+| `AUDIT-P1-IFRAME-ACTION.md` | Host iframe | postMessage/actions 对齐 + 冒烟 |
 | `HOST-WINDOW.md` | G2 / ② | 参考渲染窗 |
 | `CUSTOM-PACKAGE-MANIFEST.md` | G4 / ④ | 注册即渲染规范 |
 | `EVAL-SET-V0.md` | G7 / ⑥ | ≥20 题意图 |
@@ -63,3 +65,5 @@
 - [`AUDIT-P1-AUTO-HOST.md`](./AUDIT-P1-AUTO-HOST.md) — ui_open 自动拉起 Host + strictHash 默认
 - [`AUDIT-P0-OPS-DEFAULT.md`](./AUDIT-P0-OPS-DEFAULT.md) — P0 边输出边画默认
 - [`HF-TEMPLATES.md`](./HF-TEMPLATES.md) — 高频模板 Calculator/Comparison/Stepper/Checklist/MapStub/GameShell
+- [`DATA-VS-RENDER.md`](./DATA-VS-RENDER.md) — Data vs Render tool；防整卡/iframe remount
+- [`AUDIT-P1-IFRAME-ACTION.md`](./AUDIT-P1-IFRAME-ACTION.md) — iframe action 回传对齐

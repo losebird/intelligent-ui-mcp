@@ -242,7 +242,13 @@ export function App() {
       if (!h || h < 40) return;
       try {
         window.parent?.postMessage(
-          { source: "intelligent-ui-host", type: "iui.resize", height: h },
+          {
+            channel: "iui.host.v1",
+            source: "intelligent-ui-host",
+            type: "iui.resize",
+            height: h,
+            sessionId: activeSessionId,
+          },
           "*",
         );
       } catch {

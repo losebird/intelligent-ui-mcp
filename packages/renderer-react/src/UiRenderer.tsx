@@ -95,8 +95,14 @@ export function UiRenderer(props: {
     const degraded = !has;
     const aliased = Boolean(has && aliasTarget);
 
+    // Prefer stable node.id as React key — changing node.key remounts (loses iframe/local state).
     return (
-      <div key={node.key ?? node.id} className={aliased ? "iui-aliased" : undefined}>
+      <div
+        key={node.id}
+        data-iui-node-id={node.id}
+        data-iui-type={node.type}
+        className={aliased ? "iui-aliased" : undefined}
+      >
         {aliased ? (
           <div className="iui-alias-hint" title={`schema_only → ${aliasTarget}`}>
             {node.type} → {aliasTarget}

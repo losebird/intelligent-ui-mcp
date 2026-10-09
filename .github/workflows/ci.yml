@@ -52,5 +52,8 @@ jobs:
       - name: Sandbox trust-boundary smoke
         run: npm run sandbox-smoke
 
+      - name: Iframe action + data/render smoke
+        run: npm run iframe-action-smoke
+
       - name: Eval cases validate
         run: npm run eval:validate

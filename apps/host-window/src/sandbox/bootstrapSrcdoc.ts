@@ -95,18 +95,48 @@ export function buildSandboxSrcdoc(): string {
     document.head.appendChild(el);
   }
 
+  function flattenAction(a) {
+    a = a || {};
+    // If component passed a full RenderAction, keep fields; unwrap one nested .action.
+    if (a.action && typeof a.action === 'object' && (a.action.type || a.type)) {
+      var inner = a.action;
+      return {
+        type: inner.type || a.type,
+        value: ('value' in inner) ? inner.value : a.value,
+        path: inner.path || a.path,
+        payload: inner.payload || a.payload || {},
+        actionId: a.actionId || inner.actionId,
+      };
+    }
+    return {
+      type: a.type,
+      value: a.value,
+      path: a.path,
+      payload: a.payload || {},
+      actionId: a.actionId,
+    };
+  }
+
   function renderWithProps(props) {
     if (!Comp || !rootEl || !globalThis.React || !globalThis.ReactDOM) return;
     var React = globalThis.React;
     var ReactDOM = globalThis.ReactDOM;
     var onAction = function (a) {
-      post({
+      var flat = flattenAction(a);
+      var msg = {
         type: 'action',
         requestId: currentRequestId,
         nodeId: currentNodeId,
         componentType: currentComponentType,
-        action: a || {},
-      });
+        action: {
+          type: flat.type,
+          value: flat.value,
+          path: flat.path,
+          payload: flat.payload || {},
+        },
+      };
+      if (flat.actionId) msg.actionId = flat.actionId;
+      post(msg);
     };
     var element = React.createElement(Comp, Object.assign({}, props || {}, {
       nodeId: currentNodeId,
@@ -188,6 +218,13 @@ export function buildSandboxSrcdoc(): string {
     if (data.type === 'init') handleInit(data);
     else if (data.type === 'props') handleProps(data);
     else if (data.type === 'dispose') handleDispose();
+    else if (data.type === 'action_ack') {
+      // Parent confirmed Host POST /api/action; keep for debugging / future UI.
+      try {
+        rootEl && rootEl.setAttribute('data-iui-last-ack', String(data.actionId || ''));
+        rootEl && rootEl.setAttribute('data-iui-last-ack-ok', data.ok ? '1' : '0');
+      } catch (_) { /* ignore */ }
+    }
   });
 
   post({ type: 'boot' });
